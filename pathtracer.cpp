@@ -16,16 +16,19 @@
 #include "png++/png.hpp"
 #include <eigen3/Eigen/Dense>
 
-void write_png(const char* filename, int ***pixel_data,
+typedef Eigen::Vector3f vec3f;
+typedef Eigen::Vector3d vec3i;
+
+void write_png(const char* filename, int* pixel_data,
         int img_width, int img_height)
 {
     png::image<png::rgb_pixel> image(img_width, img_height);
     for (png::uint_32 y = 0; y < image.get_height(); ++y) {
         for (png::uint_32 x = 0; x < image.get_width(); ++x) {
             image[y][x] = png::rgb_pixel(
-                    pixel_data[y][x][0],
-                    pixel_data[y][x][1],
-                    pixel_data[y][x][2]);
+                    pixel_data[3 * (y * x + x)],
+                    pixel_data[3 * (y * x + x) + 1],
+                    pixel_data[3 * (y * x + x) + 2]);
         }
     }
     image.write(filename);
@@ -52,6 +55,15 @@ void load_scene(std::vector<tinyobj::shape_t> &shapes,
 
 int main(int argc, char* argv[])
 {
+    int width = 256,
+        height = 256;
+    int pixels[height*width*3];
+
+    int sky_blue[3] = {126, 192, 238};
+    for (int i = 0; i < width*height*3; i++) {
+        pixels[i] = sky_blue[i % 3];
+    }
+
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> mats;
 
@@ -67,6 +79,13 @@ int main(int argc, char* argv[])
     for (tinyobj::shape_t shape : shapes) {
         std::cout << shape.name << std::endl;
     }
+
+    vec3f v1(0, 1, 0);
+    vec3f v2(1, 0, 0);
+    std::cout << v1.dot(v2) << std::endl;
+
+    write_png("rt.png", pixels, width, height);
+
 
     return 0;
 }
