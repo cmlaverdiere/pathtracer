@@ -1,16 +1,26 @@
-// See also:
-// Metropolis light transport
-// Volumetric Pathtracing
-//
-// Requires: tinyobjloader (included), Eigen, png++
+/*
+ * A pathtracer. This is a successor to a raytracer I wrote a few years ago.
+ * Hopefully I can get some even cooler pictures out of this one. This time
+ * around I'm using libraries for wavefront .obj loading, .png writing, and
+ * vector math, whereas before they were hand rolled. Fuck that though.
+ *
+ * Requires: tinyobjloader (included), Eigen, png++
+ *
+ * See also:
+ * - Metropolis light transport
+ * - Volumetric Pathtracing
+ * - PBRT book
+ */
 
 #include <cstdlib>
 #include <iostream>
 #include <string>
 #include <vector>
+#include <limits>
 
 #include <libgen.h>
 #include <string.h>
+#include <math.h>
 
 #include "tiny_obj_loader.h"
 #include "png++/png.hpp"
@@ -29,10 +39,10 @@ void write_png(const char* filename, uint8_t* pixel_data,
     png::image<png::rgb_pixel> image(img_width, img_height);
     for (png::uint_32 y = 0; y < image.get_height(); ++y) {
         for (png::uint_32 x = 0; x < image.get_width(); ++x) {
-            image[y][x] = png::rgb_pixel(
-                    pixel_data[3 * (y * x + x)],
-                    pixel_data[3 * (y * x + x) + 1],
-                    pixel_data[3 * (y * x + x) + 2]);
+            image.set_pixel(x, y, png::rgb_pixel(
+                    pixel_data[3 * (y * image.get_width() + x)],
+                    pixel_data[3 * (y * image.get_width() + x) + 1],
+                    pixel_data[3 * (y * image.get_width() + x) + 2]));
         }
     }
     image.write(filename);
@@ -97,8 +107,9 @@ float intersect(triangle_t tri, vec3f ray, vec3f eye)
 
 int main(int argc, char* argv[])
 {
-    int width = 256,
-        height = 256;
+    // TODO make different to find bugs.
+    int width = 128,
+        height = width;
     uint8_t pixels[height*width*3];
 
     uint8_t sky_blue[3] = {126, 192, 238};
@@ -110,6 +121,9 @@ int main(int argc, char* argv[])
     std::vector<tinyobj::material_t> mats;
 
     std::cout << "Pathtracer - Chris Laverdiere 2016" << std::endl;
+
+    // std::string model_path = "/home/chris/devel/graphics/pathtracer/";
+    // std::string model_name = "test.obj";
 
     std::string model_path = "/home/chris/devel/graphics/models/CornellBox/";
     std::string model_name = "CornellBox-Original.obj";
@@ -124,16 +138,40 @@ int main(int argc, char* argv[])
 
     // TEMP triangle raytracer
     // NOTE assumes all triangles.
-    vec3f eye(0, 0.0, -0.85);
+
+    // Eigen::Matrix4f projection;
+    // float y_scale = 1.0 / tan(fov / 2.0);
+    // float x_scale = y_scale;
+    // float z_near = -0.5;
+    // float z_far = 1.5;
+    // projection << x_scale, 0, 0, 0,
+    //            0, y_scale, 0, 0,
+    //            0, 0, -(z_far+z_near) / (z_far-z_near), -1,
+    //            0, 0, -2*z_near*z_far / (z_far-z_near);
+
+    float fov = M_PI / 2.0;
+    double t = tan(fov / 2);
+    double b = -t;
+    double l = -t;
+    double r = t;
+
     std::cout << "Raytracing" << std::endl;
     for (int y=0; y < height; y++) {
         for (int x=0; x < width; x++) {
-            float closest_dist = 1;
+            float closest_dist = std::numeric_limits<float>::infinity();
             vec3f closest_color = vec3f(0.8, 0.2, 0.4);
 
-            float u = (float) (x - width / 2) / (width / 2);
-            float v = (float) (y - height / 2) / (height / 2);
-            vec3f ray(u, v, 1.0);
+            // float u = (float) (x - width / 2) / (width / 2);
+            // float v = (float) (y - height / 2) / (height / 2);
+
+            float u = l + ((r - l) * (x + 0.5) / height);
+            float v = b + ((t - b) * (y + 0.5) / width);
+
+            v = -v;
+
+            vec3f ray(u, v, -1.0);
+            ray = ray / ray.norm();
+            vec3f eye(0, 0.5, 1.5);
 
             for (tinyobj::shape_t shape : shapes) {
                 tinyobj::mesh_t mesh = shape.mesh;
@@ -153,23 +191,25 @@ int main(int argc, char* argv[])
                     triangle_t tri = { v1, v2, v3 };
 
                     float dist = intersect(tri, ray, eye);
+
                     if (dist < closest_dist && dist != 0) {
                         float* kd = mats[mesh.material_ids[i / 3]].diffuse;
                         closest_dist = dist;
-                        // closest_color = vec3f(kd[0], kd[1], kd[2]);
-                        closest_color = vec3f(dist, dist, dist);
+                        // std::cout << kd[0] << "," << kd[1] << "," << kd[2] << std::endl;
+                        closest_color = vec3f(kd[0], kd[1], kd[2]);
                     }
                 }
             }
 
-            pixels[3 * (y * x + x)] = 255 * closest_color.x();
-            pixels[3 * (y * x + x) + 1] = 255 * closest_color.y();
-            pixels[3 * (y * x + x) + 2] = 255 * closest_color.z();
+            pixels[3 * (y * width + x)] = 255 * closest_color.x();
+            pixels[3 * (y * width + x) + 1] = 255 * closest_color.y();
+            pixels[3 * (y * width + x) + 2] = 255 * closest_color.z();
         }
     }
 
     std::cout << "Writing png" << std::endl;
     write_png("rt.png", pixels, width, height);
+    std::cout << "Done" << std::endl;
 
     return 0;
 }

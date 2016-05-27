@@ -1,4 +1,5 @@
 *.a
 *.o
+*.png
 tags
 pathtracer
