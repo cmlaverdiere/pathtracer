@@ -54,9 +54,12 @@ void load_scene(std::vector<tinyobj::shape_t> &shapes,
 {
     std::string err;
 
+    unsigned int flags =
+        tinyobj::triangulation | tinyobj::calculate_normals;
+
     std::string obj_filename = model_path + model_name;
     bool success = tinyobj::LoadObj(shapes, mats, err, obj_filename.c_str(),
-            model_path.c_str());
+            model_path.c_str(), flags);
 
     if (!success) {
         std::cout << err << std::endl;
@@ -65,6 +68,12 @@ void load_scene(std::vector<tinyobj::shape_t> &shapes,
     } else {
         std::cout << "Model loaded successfully." << std::endl;
     }
+}
+
+vec3f unit(vec3f v)
+{
+    vec3f vn(v / v.norm());
+    return vn;
 }
 
 // https://en.wikipedia.org/wiki/Moller-Trumbore_intersection_algorithm
@@ -108,7 +117,7 @@ float intersect(triangle_t tri, vec3f ray, vec3f eye)
 int main(int argc, char* argv[])
 {
     // TODO make different to find bugs.
-    int width = 128,
+    int width = 256,
         height = width;
     uint8_t pixels[height*width*3];
 
@@ -131,25 +140,14 @@ int main(int argc, char* argv[])
     std::cout << "Loading model " << model_path << model_name << std::endl;
     load_scene(shapes, mats, model_path, model_name);
 
-    std::cout << "Loaded " << shapes.size() << " shapes:" << std::endl;
-
     // IMPLEMENT
     // Pathtrace each pixel, sample multiple times.
 
     // TEMP triangle raytracer
     // NOTE assumes all triangles.
 
-    // Eigen::Matrix4f projection;
-    // float y_scale = 1.0 / tan(fov / 2.0);
-    // float x_scale = y_scale;
-    // float z_near = -0.5;
-    // float z_far = 1.5;
-    // projection << x_scale, 0, 0, 0,
-    //            0, y_scale, 0, 0,
-    //            0, 0, -(z_far+z_near) / (z_far-z_near), -1,
-    //            0, 0, -2*z_near*z_far / (z_far-z_near);
-
-    float fov = M_PI / 2.0;
+    // TODO briefly go over the trig for this.
+    float fov = M_PI / 5.0;
     double t = tan(fov / 2);
     double b = -t;
     double l = -t;
@@ -159,7 +157,7 @@ int main(int argc, char* argv[])
     for (int y=0; y < height; y++) {
         for (int x=0; x < width; x++) {
             float closest_dist = std::numeric_limits<float>::infinity();
-            vec3f closest_color = vec3f(0.8, 0.2, 0.4);
+            vec3f closest_color = vec3f(0.1, 0.1, 0.1);
 
             // float u = (float) (x - width / 2) / (width / 2);
             // float v = (float) (y - height / 2) / (height / 2);
@@ -170,9 +168,10 @@ int main(int argc, char* argv[])
             v = -v;
 
             vec3f ray(u, v, -1.0);
-            ray = ray / ray.norm();
-            vec3f eye(0, 0.5, 1.5);
+            vec3f rayn = unit(ray);
+            vec3f eye(0, 1.0, 4.0);
 
+            // TODO refactor into trace fn
             for (tinyobj::shape_t shape : shapes) {
                 tinyobj::mesh_t mesh = shape.mesh;
                 for (int i=0; i < mesh.indices.size(); i += 3) {
@@ -190,13 +189,18 @@ int main(int argc, char* argv[])
                             mesh.positions[j3+2]);
                     triangle_t tri = { v1, v2, v3 };
 
-                    float dist = intersect(tri, ray, eye);
+                    float dist = intersect(tri, rayn, eye);
 
                     if (dist < closest_dist && dist != 0) {
                         float* kd = mats[mesh.material_ids[i / 3]].diffuse;
+                        vec3f norm(mesh.normals[j1],
+                                mesh.normals[j1+1], mesh.normals[j1+2]);
+                        vec3f light(0.0, 2.0, 0.0);
+                        vec3f ip = eye + dist * rayn;
+                        vec3f to_l = unit(light - ip);
+                        float n_l = fabs(norm.dot(to_l));
                         closest_dist = dist;
-                        // std::cout << kd[0] << "," << kd[1] << "," << kd[2] << std::endl;
-                        closest_color = vec3f(kd[0], kd[1], kd[2]);
+                        closest_color = n_l * vec3f(kd[0], kd[1], kd[2]);
                     }
                 }
             }
