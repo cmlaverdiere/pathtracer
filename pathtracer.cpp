@@ -135,11 +135,16 @@ float intersect(triangle_t &tri, vec3f &ray, vec3f &eye)
     }
 }
 
-vec3f trace(Scene &scene, vec3f ray, vec3f eye)
+vec3f trace(Scene &scene, vec3f ray, vec3f eye,
+        int bounce=0, int max_bounces=3)
 {
-    vec3f closest_color(0.49, 0.75, 0.93); // Sky blue.
-    float closest_dist = std::numeric_limits<float>::infinity();
+    vec3f out_color(0.49, 0.75, 0.93); // Sky blue.
+    float cl_dist = std::numeric_limits<float>::infinity();
+    tinyobj::shape_t cl_shape;
+    vec3f cl_norm;
+    int cl_index;
 
+    bool hit = false;
     for (tinyobj::shape_t shape : scene.shapes) {
         tinyobj::mesh_t mesh = shape.mesh;
         for (int i=0; i < mesh.indices.size(); i += 3) {
@@ -153,22 +158,30 @@ vec3f trace(Scene &scene, vec3f ray, vec3f eye)
 
             float dist = intersect(tri, ray, eye);
 
-            if (dist < closest_dist && dist != 0) {
-                float* kd = scene.mats[mesh.material_ids[i / 3]].diffuse;
-                vec3f norm(mesh.normals[j1],
-                        mesh.normals[j1+1], mesh.normals[j1+2]);
-                vec3f light(0.0, 2.0, 0.0);
-                vec3f ip = eye + dist * ray;
-                vec3f to_l_temp = light - ip;
-                vec3f to_l = unit(to_l_temp);
-                float n_l = fabs(norm.dot(to_l));
-                closest_dist = dist;
-                closest_color = n_l * to_vec3f(kd);
+            if (dist < cl_dist && dist != 0) {
+                hit = true;
+                cl_dist = dist;
+                cl_shape = shape; // TODO pointer
+                cl_norm = to_vec3f(&mesh.normals[j1]);
+                cl_index = i;
             }
         }
     }
 
-    return closest_color;
+    if (hit) {
+        tinyobj::mesh_t mesh = cl_shape.mesh;
+        vec3f light(0.0, 2.0, 0.0);
+        vec3f ip = eye + cl_dist * ray;
+        vec3f to_l_temp = light - ip;
+        vec3f to_l = unit(to_l_temp);
+        float n_l = fabs(cl_norm.dot(to_l));
+        if (n_l > 1.0) goto out; // FIXME bug with pink square normals
+        float* kd = scene.mats[mesh.material_ids[cl_index / 3]].diffuse;
+        out_color = n_l * to_vec3f(kd);
+    }
+
+out:
+    return out_color;
 }
 
 int main(int argc, char* argv[])
