@@ -1,5 +1,6 @@
 *.a
 *.o
-*.png
 tags
 pathtracer
+core.*
+rt.png
