@@ -4,3 +4,4 @@ tags
 pathtracer
 core.*
 rt.png
+*.vim
