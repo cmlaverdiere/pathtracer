@@ -6,10 +6,14 @@
  *
  * Requires: tinyobjloader (included), Eigen, png++
  *
- * See also:
+ * Related:
  * - Metropolis light transport
  * - Volumetric Pathtracing
  * - PBRT book
+ *
+ * Sources:
+ * https://en.wikipedia.org/wiki/Path_tracing
+ * https://en.wikipedia.org/wiki/Rendering_equation
  */
 
 // FIXME Likely a bug in computing the normals of the last shape. Check this.
@@ -17,14 +21,17 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <limits>
+#include <numeric>
 #include <string>
 #include <vector>
-#include <limits>
 
 #include <libgen.h>
 #include <libgen.h>
-#include <string.h>
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 #include "tiny_obj_loader.h"
 #include "png++/png.hpp"
@@ -59,7 +66,7 @@ void write_png(const char* filename, uint8_t* pixel_data,
 
 void write_pixel(uint8_t* pixels, vec3f &color, int x, int y, int width)
 {
-    assert(color.x() <= 1.0 && color.y() <= 1.0 && color.z() <= 1.0);
+    // assert(color.x() <= 1.0 && color.y() <= 1.0 && color.z() <= 1.0);
     pixels[3 * (y * width + x)] = 255 * color.x();
     pixels[3 * (y * width + x) + 1] = 255 * color.y();
     pixels[3 * (y * width + x) + 2] = 255 * color.z();
@@ -97,6 +104,15 @@ vec3f unit(vec3f &v)
 {
     vec3f vn(v / v.norm());
     return vn;
+}
+
+vec3f vec_average(std::vector<vec3f> vecs)
+{
+    vec3f accum(0.0, 0.0, 0.0);
+    for (vec3f v : vecs) {
+        accum += v;
+    }
+    return accum / vecs.size();
 }
 
 // https://en.wikipedia.org/wiki/Moller-Trumbore_intersection_algorithm
@@ -137,6 +153,15 @@ float intersect(triangle_t &tri, vec3f &ray, vec3f &eye)
     }
 }
 
+vec3f rand_hemisphere_vec(vec3f norm)
+{
+    vec3f randy = Eigen::Vector3f::Random();
+    if (randy.dot(norm) < 0) {
+        randy = -randy;
+    }
+    return unit(randy);
+}
+
 vec3f trace(Scene &scene, vec3f ray, vec3f eye,
         int bounce=0, int max_bounces=3)
 {
@@ -175,27 +200,27 @@ vec3f trace(Scene &scene, vec3f ray, vec3f eye,
     if (hit) {
         tinyobj::mesh_t mesh = cl_shape.mesh;
         tinyobj::material_t mat = scene.mats[mesh.material_ids[cl_index / 3]];
-        vec3f ip = eye + cl_dist * ray;
 
-        // Reflection
-        vec3f specular(0.0, 0.0, 0.0);
-        if (bounce < max_bounces) {
-            vec3f reflect = ray + 2 * cl_norm.dot(-ray) * cl_norm;
-            vec3f ks = to_vec3f(mat.specular);
-            if (ks.norm() != 0.0) {
-                specular = ks.cwiseProduct(
-                        trace(scene, reflect, ip, bounce + 1));
-            }
+        // Return black if we've bounced around enough.
+        if (bounce > max_bounces) {
+            return vec3f(0.0, 0.0, 0.0);
         }
 
-        // Diffuse Lighting
-        vec3f light(0.0, 2.0, 0.0);
-        vec3f to_l_temp = light - ip;
-        vec3f to_l = unit(to_l_temp);
-        float n_l = fabs(cl_norm.dot(to_l));
-        float* kd = mat.diffuse;
-        vec3f diffuse = n_l * to_vec3f(kd);
-        out_color = 0.8 * diffuse + 0.2 * specular;
+        // Material properties
+        vec3f ip = eye + cl_dist * ray;
+        vec3f emittance = to_vec3f(mat.emission);
+        vec3f reflectance = to_vec3f(mat.specular);
+
+        // Reflect in a random direction on the normal's unit hemisphere.
+        vec3f reflect_dir = rand_hemisphere_vec(cl_norm);
+
+        // Calculate BRDF
+        float cos_theta = cl_norm.dot(-ray);
+        vec3f brdf = 2 * reflectance * cos_theta;
+        vec3f reflected_amt = trace(scene, reflect_dir, ip, bounce + 1);
+
+        // Final color
+        out_color = emittance + (brdf.cwiseProduct(reflected_amt));
     }
 
     return out_color;
@@ -203,8 +228,12 @@ vec3f trace(Scene &scene, vec3f ray, vec3f eye,
 
 int main(int argc, char* argv[])
 {
+    // Pathtracer settings
+    int num_samples = 10; // Number of samples per pixel
+    float fov = M_PI / 5.0; // Camera field of view
+
     // REMINDER: Make dimensions different to find bugs.
-    int width = 192,
+    int width = 128,
         height = width;
     uint8_t pixels[height*width*3];
 
@@ -214,6 +243,9 @@ int main(int argc, char* argv[])
         pixels[i] = sky_blue[i % 3];
     }
 
+    // For random vectors
+    srand(time(NULL));
+
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> mats;
 
@@ -222,7 +254,7 @@ int main(int argc, char* argv[])
     std::cout << "Pathtracer - Chris Laverdiere 2016" << std::endl;
 
     // Debugging Files.
-    // std::string model_path = "/home/chris/devel/graphics/pathtracer/";
+    // std::string model_path = "";
     // std::string model_name = "test.obj";
 
     std::string model_path = "objs/";
@@ -237,7 +269,6 @@ int main(int argc, char* argv[])
     // TEMP triangle raytracer
     // NOTE assumes all triangles.
 
-    float fov = M_PI / 5.0;
     float t = tan(fov / 2),
            b = -t,
            l = -t,
@@ -261,8 +292,13 @@ int main(int argc, char* argv[])
             vec3f rayn = unit(ray);
             vec3f eye(0, 1.0, 4.0);
 
-            vec3f closest_color = trace(scene, rayn, eye);
-            write_pixel(pixels, closest_color, x, y, width);
+            std::vector<vec3f> samples;
+            for (int i=0; i < num_samples; i++) {
+                samples.push_back(trace(scene, rayn, eye));
+            }
+
+            vec3f average_sample = vec_average(samples);
+            write_pixel(pixels, average_sample, x, y, width);
         }
 
         // Update progress bar.
