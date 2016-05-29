@@ -1,3 +1,5 @@
+# TODO -O3
+
 CC=clang++
 FLAGS=-g -Wall -std=c++11
 LIBPATH=./lib
