@@ -225,7 +225,7 @@ int main(int argc, char* argv[])
     // std::string model_path = "/home/chris/devel/graphics/pathtracer/";
     // std::string model_name = "test.obj";
 
-    std::string model_path = "/home/chris/devel/graphics/models/CornellBox/";
+    std::string model_path = "objs/";
     std::string model_name = "CornellBox-Original.obj";
 
     std::cout << "Loading model " << model_path << model_name << std::endl;

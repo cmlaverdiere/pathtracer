@@ -19,7 +19,9 @@ xnoremap  h
 onoremap  h
 xnoremap <silent> 	 :call UltiSnips#SaveLastVisualSelection()gvs
 snoremap <silent> 	 :call UltiSnips#ExpandSnippet()
-noremap <NL> j
+nnoremap <NL> j
+xnoremap <NL> j
+onoremap <NL> j
 noremap  k
 noremap  l
 snoremap  "_c
@@ -27,7 +29,7 @@ vmap  <Plug>VisualDecrement
 nnoremap  [s1z=
 map   \
 nnoremap ' `
-vnoremap . :normal .
+xnoremap . :normal .
 nmap <, <Plug>Argumentative_MoveLeft
 nmap >, <Plug>Argumentative_MoveRight
 xnoremap @q :normal @q
@@ -333,7 +335,7 @@ nmap <silent> [a <Plug>unimpairedAPrevious
 xmap [, <Plug>Argumentative_XPrev
 omap [, <Plug>Argumentative_Prev
 nmap [, <Plug>Argumentative_Prev
-vmap [% [%m'gv``
+xmap [% [%m'gv``
 nmap \* :execute 'noautocmd vimgrep /\V' . substitute(escape(expand("<cword>"), '\'), '\n', '\\n', 'g') . '/ **'
 xnoremap \pe :!python 
 xnoremap \bc :!bc -l
@@ -364,7 +366,9 @@ nnoremap <silent> \n :nohlsearch
 nnoremap \i :e ~/.vim/vimrc
 nnoremap \gpp :!g++ -g -std=c++11 % -o %< && ./%<
 nnoremap \gcc :!gcc -g -std=c99 % -o %< && ./%<
-noremap \G :Google
+nnoremap \G :Google
+xnoremap \G :Google
+onoremap \G :Google
 nnoremap \g :Gstatus
 nnoremap \F :Files ~/
 nnoremap \f :Files
@@ -411,7 +415,7 @@ nmap <silent> ]a <Plug>unimpairedANext
 xmap ], <Plug>Argumentative_XNext
 omap ], <Plug>Argumentative_Next
 nmap ], <Plug>Argumentative_Next
-vmap ]% ]%m'gv``
+xmap ]% ]%m'gv``
 nnoremap ` '
 omap ae <Plug>(textobj-entire-a)
 xmap ae <Plug>(textobj-entire-a)
@@ -548,7 +552,7 @@ onoremap <silent> a) :call targets#o(')ca', v:count1)
 onoremap <silent> al( :call targets#o('(la', v:count1)
 onoremap <silent> an( :call targets#o('(na', v:count1)
 onoremap <silent> a( :call targets#o('(ca', v:count1)
-vmap a% [%v]%
+xmap a% [%v]%
 nnoremap cov :set =(&virtualedit =~# "all") ? 'virtualedit-=all' : 'virtualedit+=all'
 nnoremap cox :set =&cursorline && &cursorcolumn ? 'nocursorline nocursorcolumn' : 'cursorline cursorcolumn'
 nnoremap cod :=&diff ? 'diffoff' : 'diffthis'
@@ -559,7 +563,7 @@ nmap cgc <Plug>ChangeCommentary
 nmap cr <Plug>Coerce
 nmap ds <Plug>Dsurround
 nnoremap <silent> dsa ds}dF\
-vmap gx <Plug>NetrwBrowseXVis
+xmap gx <Plug>NetrwBrowseXVis
 nmap gx <Plug>NetrwBrowseX
 xmap gS <Plug>VgSurround
 nmap gcu <Plug>Commentary<Plug>Commentary
@@ -567,9 +571,9 @@ nmap gcc <Plug>CommentaryLine
 omap gc <Plug>Commentary
 nmap gc <Plug>Commentary
 xmap gc <Plug>Commentary
-vmap <silent> gL <Plug>VLionLeft
+xmap <silent> gL <Plug>VLionLeft
 nmap <silent> gL <Plug>LionLeft
-vmap <silent> gl <Plug>VLionRight
+xmap <silent> gl <Plug>VLionRight
 nmap <silent> gl <Plug>LionRight
 nnoremap gK :!cppman 
 omap ie <Plug>(textobj-entire-i)
@@ -796,6 +800,7 @@ set history=10000
 set hlsearch
 set ignorecase
 set incsearch
+set operatorfunc=<SNR>30_go
 set pastetoggle=\\pt
 set ruler
 set runtimepath=~/.vim,~/.fzf/,~/.vim/plugged/fzf.vim/,~/.vim/plugged/gruvbox/,~/.vim/plugged/tabular/,~/.vim/plugged/targets.vim/,~/.vim/plugged/ultisnips/,~/.vim/plugged/vim-altr/,~/.vim/plugged/vim-argumentative/,~/.vim/plugged/vim-g/,~/.vim/plugged/vim-lion/,~/.vim/plugged/vim-abolish/,~/.vim/plugged/vim-commentary/,~/.vim/plugged/vim-fugitive/,~/.vim/plugged/vim-repeat/,~/.vim/plugged/vim-snippets/,~/.vim/plugged/vim-surround/,~/.vim/plugged/vim-unimpaired/,~/.vim/plugged/vim-textobj-user/,~/.vim/plugged/vim-textobj-entire/,~/.vim/plugged/vim-visual-increment/,~/.vim/plugged/vim-visual-star-search/,/usr/share/vim/vimfiles,/usr/share/vim/vim74,/usr/share/vim/vim74/pack/dist/opt/matchit,/usr/share/vim/vimfiles/after,~/.vim/plugged/tabular/after,~/.vim/plugged/ultisnips/after,~/.vim/after
