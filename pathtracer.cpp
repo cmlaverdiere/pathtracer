@@ -12,6 +12,8 @@
  * - PBRT book
  */
 
+// FIXME Likely a bug in computing the normals of the last shape. Check this.
+
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
@@ -144,13 +146,14 @@ vec3f trace(Scene &scene, vec3f ray, vec3f eye,
     vec3f cl_norm;
     int cl_index;
 
+    // Find which triangle (if any) our ray hits.
     bool hit = false;
     for (tinyobj::shape_t shape : scene.shapes) {
         tinyobj::mesh_t mesh = shape.mesh;
         for (int i=0; i < mesh.indices.size(); i += 3) {
-            int j1 = mesh.indices[i]*3;
-            int j2 = mesh.indices[i+1]*3;
-            int j3 = mesh.indices[i+2]*3;
+            unsigned int j1 = mesh.indices[i]*3;
+            unsigned int j2 = mesh.indices[i+1]*3;
+            unsigned int j3 = mesh.indices[i+2]*3;
             vec3f v1 = to_vec3f(&mesh.positions[j1]);
             vec3f v2 = to_vec3f(&mesh.positions[j2]);
             vec3f v3 = to_vec3f(&mesh.positions[j3]);
@@ -168,19 +171,33 @@ vec3f trace(Scene &scene, vec3f ray, vec3f eye,
         }
     }
 
+    // If the ray hit a triangle, compute the output color.
     if (hit) {
         tinyobj::mesh_t mesh = cl_shape.mesh;
-        vec3f light(0.0, 2.0, 0.0);
+        tinyobj::material_t mat = scene.mats[mesh.material_ids[cl_index / 3]];
         vec3f ip = eye + cl_dist * ray;
+
+        // Reflection
+        vec3f specular(0.0, 0.0, 0.0);
+        if (bounce < max_bounces) {
+            vec3f reflect = ray + 2 * cl_norm.dot(-ray) * cl_norm;
+            vec3f ks = to_vec3f(mat.specular);
+            if (ks.norm() != 0.0) {
+                specular = ks.cwiseProduct(
+                        trace(scene, reflect, ip, bounce + 1));
+            }
+        }
+
+        // Diffuse Lighting
+        vec3f light(0.0, 2.0, 0.0);
         vec3f to_l_temp = light - ip;
         vec3f to_l = unit(to_l_temp);
         float n_l = fabs(cl_norm.dot(to_l));
-        if (n_l > 1.0) goto out; // FIXME bug with pink square normals
-        float* kd = scene.mats[mesh.material_ids[cl_index / 3]].diffuse;
-        out_color = n_l * to_vec3f(kd);
+        float* kd = mat.diffuse;
+        vec3f diffuse = n_l * to_vec3f(kd);
+        out_color = 0.8 * diffuse + 0.2 * specular;
     }
 
-out:
     return out_color;
 }
 
