@@ -16,8 +16,6 @@
  * https://en.wikipedia.org/wiki/Rendering_equation
  */
 
-// FIXME Likely a bug in computing the normals of the last shape. Check this.
-
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
