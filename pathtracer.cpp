@@ -17,7 +17,6 @@
  */
 
 // TODO kd-tree / octtree
-// TODO less data movement
 
 #include <cstdlib>
 #include <ctime>
@@ -196,7 +195,7 @@ vec3f rand_hemisphere_vec(vec3f &norm)
 vec3f trace(Scene &scene, vec3f ray, vec3f eye,
         int bounce=0, int max_bounces=3)
 {
-    vec3f out_color(0.49, 0.75, 0.93); // Sky blue.
+    vec3f out_color(0.0, 0.0, 0.0);
     float cl_dist = std::numeric_limits<float>::infinity();
     Triangle *cl_tri;
 
@@ -227,7 +226,7 @@ vec3f trace(Scene &scene, vec3f ray, vec3f eye,
         // Material properties
         vec3f ip = eye + cl_dist * ray;
         vec3f emittance = to_vec3f(mat.emission);
-        vec3f reflectance = to_vec3f(mat.specular);
+        vec3f reflectance = to_vec3f(mat.diffuse);
         vec3f &norm = cl_tri->norm;
 
         // Reflect in a random direction on the normal's unit hemisphere.
@@ -236,7 +235,8 @@ vec3f trace(Scene &scene, vec3f ray, vec3f eye,
         // Calculate BRDF
         float cos_theta = norm.dot(-ray);
         vec3f brdf = 2 * reflectance * cos_theta;
-        vec3f reflected_amt = trace(scene, reflect_dir, ip, bounce + 1);
+        vec3f reflected_amt = trace(scene, reflect_dir, ip, bounce + 1,
+                max_bounces);
 
         // Final color
         out_color = emittance + (brdf.cwiseProduct(reflected_amt));
@@ -248,19 +248,14 @@ vec3f trace(Scene &scene, vec3f ray, vec3f eye,
 int main(int argc, char* argv[])
 {
     // Pathtracer settings
-    int num_samples = 200; // Number of samples per pixel
+    int num_samples = 256; // Samples per pixel
+    int num_bounces = 10; // Bounces per ray
     float fov = M_PI / 5.0; // Camera field of view
 
     // REMINDER: Make dimensions different to find bugs.
     int width = 256,
         height = width;
     uint8_t pixels[height*width*3];
-
-    // Default background color.
-    uint8_t sky_blue[3] = {126, 192, 238};
-    for (int i = 0; i < width*height*3; i++) {
-        pixels[i] = sky_blue[i % 3];
-    }
 
     // For random vectors
     srand(time(NULL));
@@ -308,7 +303,7 @@ int main(int argc, char* argv[])
 
             std::vector<vec3f> samples;
             for (int i=0; i < num_samples; i++) {
-                samples.push_back(trace(scene, rayn, eye));
+                samples.push_back(trace(scene, rayn, eye, 0, num_bounces));
             }
 
             vec3f average_sample = vec_average(samples);

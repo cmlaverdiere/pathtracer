@@ -78,6 +78,7 @@ newmtl tallBox
   Ks 0.69 0.69 0.69
   Ke 0 0 0
 
+
 newmtl light
   Ns 10.0000
   Ni 1.0000
@@ -85,4 +86,5 @@ newmtl light
   Ka 0.78 0.78 0.78 # White
   Kd 0.78 0.78 0.78
   Ks 0.69 0.69 0.69
-  Ke 17 12 4
+  # Ke 17 12 4
+  Ke 50 40 10
