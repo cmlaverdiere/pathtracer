@@ -132,14 +132,6 @@ void load_scene(std::vector<tinyobj::shape_t> &shapes,
             vec3f v3 = to_vec3f(&mesh.positions[j3]);
             vec3f norm = to_vec3f(&mesh.normals[j1]);
 
-            std::cout << "Allocating:" << std::endl;
-            std::cout << v1 << std::endl;
-            std::cout << v2 << std::endl;
-            std::cout << v3 << std::endl;
-            std::cout << norm << std::endl;
-            std::cout << &(shapes[s]) << std::endl;
-            std::cout << i << std::endl;
-
             Triangle tri = {
                 .v1 = v1,
                 .v2 = v2,
@@ -290,8 +282,6 @@ int main(int argc, char* argv[])
 
     std::cout << "Loading model " << model_path << model_name << std::endl;
     load_scene(scene.shapes, scene.mats, scene.tris, model_path, model_name);
-
-    std::cout << "Triangles size: " << scene.tris.size() << std::endl;
 
     float t = tan(fov / 2),
            b = -t,
