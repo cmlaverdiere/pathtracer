@@ -248,11 +248,11 @@ vec3f trace(Scene &scene, vec3f ray, vec3f eye,
 int main(int argc, char* argv[])
 {
     // Pathtracer settings
-    int num_samples = 1; // Number of samples per pixel
+    int num_samples = 200; // Number of samples per pixel
     float fov = M_PI / 5.0; // Camera field of view
 
     // REMINDER: Make dimensions different to find bugs.
-    int width = 128,
+    int width = 256,
         height = width;
     uint8_t pixels[height*width*3];
 
