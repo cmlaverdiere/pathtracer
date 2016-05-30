@@ -1,7 +1,5 @@
-# TODO -O3
-
 CC=clang++
-FLAGS=-g -Wall -std=c++11
+FLAGS=-g -Wall -std=c++11 -O3
 LIBPATH=./lib
 INCPATH=./lib
 LIBS=-ltiny_obj_loader -lpng
