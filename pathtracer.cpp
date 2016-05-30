@@ -210,13 +210,14 @@ vec3f trace(Scene &scene, vec3f ray, vec3f eye,
 
     // Find which triangle (if any) our ray hits.
     bool hit = false;
-    for (Triangle tri : scene.tris) {
+    for (int t=0; t < scene.tris.size(); t++) {
+        Triangle &tri = scene.tris[t];
         float dist = intersect(tri, ray, eye);
 
         if (dist < cl_dist && dist != 0) {
             hit = true;
             cl_dist = dist;
-            cl_tri = &tri;
+            cl_tri = &(scene.tris[t]);
         }
     }
 
