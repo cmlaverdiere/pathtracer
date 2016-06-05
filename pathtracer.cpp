@@ -14,9 +14,11 @@
  * Sources:
  * https://en.wikipedia.org/wiki/Path_tracing
  * https://en.wikipedia.org/wiki/Rendering_equation
+ * http://www.flipcode.com/archives/Raytracing_Topics_Techniques-Part_7_Kd-Trees_and_More_Speed.shtml
  */
 
-// TODO kd-tree / octtree
+// TODO OPTIMIZATION: kd-tree with SAH
+// TODO OPTIMIZATION: threading
 
 #include <cstdlib>
 #include <ctime>
@@ -52,6 +54,28 @@ typedef struct {
     std::vector<tinyobj::material_t> mats;
     std::vector<Triangle> tris;
 } Scene;
+
+// Axis aligned bounding box (AABB)
+typedef struct {
+    vec3f p1, p2;
+} Box;
+
+typedef struct {
+    vec3f pos, dir;
+} Ray;
+
+class KdTree {
+    Box box;
+    KdTree *left, *right;
+
+    KdTree(std::vector<Triangle> tris);
+    float hit(vec3f &ray, vec3f &eye);
+};
+
+KdTree::KdTree(std::vector<Triangle> tris)
+{
+
+}
 
 void write_png(const char* filename, uint8_t* pixel_data,
         int img_width, int img_height)
@@ -145,8 +169,15 @@ void load_scene(std::vector<tinyobj::shape_t> &shapes,
     }
 }
 
+/* // TODO make Ray class with origin + direction rather than passing in eye. */
+/* bool intersect_box(Box &box, vec3f &ray, vec3f &eye) */
+/* { */
+/*     if (box.miny */
+/* } */
+
 // https://en.wikipedia.org/wiki/Moller-Trumbore_intersection_algorithm
-float intersect(Triangle &tri, vec3f &ray, vec3f &eye)
+// TODO OPTIMIZATION: precalculate dominant triangle axis.
+float intersect_tri(Triangle &tri, Ray &ray)
 {
     float EPSILON = 0.0001;
 
@@ -158,19 +189,19 @@ float intersect(Triangle &tri, vec3f &ray, vec3f &eye)
     e1 = tri.v2 - tri.v1;
     e2 = tri.v3 - tri.v1;
 
-    p = ray.cross(e2);
+    p = ray.dir.cross(e2);
     det = e1.dot(p);
 
     if (det > -EPSILON && det < EPSILON) return 0;
 
     inv_det = 1.0 / det;
-    r = eye - tri.v1;
+    r = ray.pos - tri.v1;
     u = r.dot(p) * inv_det;
 
     if (u < 0.0 || u > 1.0) return 0;
 
     q = r.cross(e1);
-    v = ray.dot(q) * inv_det;
+    v = ray.dir.dot(q) * inv_det;
 
     if (v < 0.0 || u + v > 1.0) return 0;
 
@@ -192,8 +223,7 @@ vec3f rand_hemisphere_vec(vec3f &norm)
     return unit(randy);
 }
 
-vec3f trace(Scene &scene, vec3f ray, vec3f eye,
-        int bounce=0, int max_bounces=3)
+vec3f trace(Scene &scene, Ray ray, int bounce=0, int max_bounces=3)
 {
     vec3f out_color(0.0, 0.0, 0.0);
     float cl_dist = std::numeric_limits<float>::infinity();
@@ -203,7 +233,7 @@ vec3f trace(Scene &scene, vec3f ray, vec3f eye,
     bool hit = false;
     for (int t=0; t < scene.tris.size(); t++) {
         Triangle &tri = scene.tris[t];
-        float dist = intersect(tri, ray, eye);
+        float dist = intersect_tri(tri, ray);
 
         if (dist < cl_dist && dist != 0) {
             hit = true;
@@ -224,18 +254,19 @@ vec3f trace(Scene &scene, vec3f ray, vec3f eye,
         }
 
         // Material properties
-        vec3f ip = eye + cl_dist * ray;
+        Ray reflect_ray;
+        reflect_ray.pos = ray.pos + cl_dist * ray.dir;
         vec3f emittance = to_vec3f(mat.emission);
         vec3f reflectance = to_vec3f(mat.diffuse);
         vec3f &norm = cl_tri->norm;
 
         // Reflect in a random direction on the normal's unit hemisphere.
-        vec3f reflect_dir = rand_hemisphere_vec(norm);
+        reflect_ray.dir = rand_hemisphere_vec(norm);
 
         // Calculate BRDF
-        float cos_theta = norm.dot(-ray);
+        float cos_theta = norm.dot(-ray.dir);
         vec3f brdf = 2 * reflectance * cos_theta;
-        vec3f reflected_amt = trace(scene, reflect_dir, ip, bounce + 1,
+        vec3f reflected_amt = trace(scene, reflect_ray, bounce + 1,
                 max_bounces);
 
         // Final color
@@ -248,12 +279,12 @@ vec3f trace(Scene &scene, vec3f ray, vec3f eye,
 int main(int argc, char* argv[])
 {
     // Pathtracer settings
-    int num_samples = 256; // Samples per pixel
-    int num_bounces = 10; // Bounces per ray
+    int num_samples = 30; // Samples per pixel
+    int num_bounces = 4; // Bounces per ray
     float fov = M_PI / 5.0; // Camera field of view
 
     // REMINDER: Make dimensions different to find bugs.
-    int width = 256,
+    int width = 128,
         height = width;
     uint8_t pixels[height*width*3];
 
@@ -297,13 +328,13 @@ int main(int argc, char* argv[])
             float v = b + ((t - b) * (y + 0.5) / width);
             v = -v;
 
-            vec3f ray(u, v, -1.0);
-            vec3f rayn = unit(ray);
+            vec3f dir(u, v, -1.0);
             vec3f eye(0, 1.0, 4.0);
+            Ray ray = { eye, unit(dir) };
 
             std::vector<vec3f> samples;
             for (int i=0; i < num_samples; i++) {
-                samples.push_back(trace(scene, rayn, eye, 0, num_bounces));
+                samples.push_back(trace(scene, ray, 0, num_bounces));
             }
 
             vec3f average_sample = vec_average(samples);
