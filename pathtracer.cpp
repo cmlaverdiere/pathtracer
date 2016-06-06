@@ -17,8 +17,8 @@
  * http://www.flipcode.com/archives/Raytracing_Topics_Techniques-Part_7_Kd-Trees_and_More_Speed.shtml
  */
 
-// TODO OPTIMIZATION: kd-tree with SAH
-// TODO OPTIMIZATION: threading
+// OPT: kd-tree with SAH
+// OPT: threading
 
 #include <cstdlib>
 #include <ctime>
@@ -38,6 +38,8 @@
 #include "tiny_obj_loader.h"
 #include "png++/png.hpp"
 #include <eigen3/Eigen/Dense>
+
+#define INF std::numeric_limits<float>::infinity();
 
 typedef Eigen::Vector3f vec3f;
 typedef Eigen::Vector3d vec3i;
@@ -169,14 +171,40 @@ void load_scene(std::vector<tinyobj::shape_t> &shapes,
     }
 }
 
-/* // TODO make Ray class with origin + direction rather than passing in eye. */
-/* bool intersect_box(Box &box, vec3f &ray, vec3f &eye) */
-/* { */
-/*     if (box.miny */
-/* } */
+// Modified slabs method from Real Time Rendering ch 16.7.1
+// PROFILE: Branch all at once.
+// OPT: Try without div by f.
+bool intersect_box(Box &box, Ray &ray)
+{
+    float t_min = -INF;
+    float t_max = INF;
+
+    vec3f to_p1 = box.p1 - ray.pos;
+    vec3f to_p2 = box.p2 - ray.pos;
+
+    // TODO extra checks.
+    for (int i=0; i<3; i++) {
+        float f = ray.dir[i];
+        float t1 = to_p1[i] / f;
+        float t2 = to_p2[i] / f;
+
+        if (t1 > t2) {
+            float temp = t1;
+            t1 = t2;
+            t2 = temp;
+        }
+
+        if (t1 > t_min) t_min = t1;
+        if (t2 < t_max) t_max = t2;
+        if (t_min > t_max) return false;
+        if (t_max < 0) return false;
+    }
+
+    return true;
+}
 
 // https://en.wikipedia.org/wiki/Moller-Trumbore_intersection_algorithm
-// TODO OPTIMIZATION: precalculate dominant triangle axis.
+// OPT: precalculate dominant triangle axis.
 float intersect_tri(Triangle &tri, Ray &ray)
 {
     float EPSILON = 0.0001;
@@ -226,7 +254,7 @@ vec3f rand_hemisphere_vec(vec3f &norm)
 vec3f trace(Scene &scene, Ray ray, int bounce=0, int max_bounces=3)
 {
     vec3f out_color(0.0, 0.0, 0.0);
-    float cl_dist = std::numeric_limits<float>::infinity();
+    float cl_dist = INF;
     Triangle *cl_tri;
 
     // Find which triangle (if any) our ray hits.
