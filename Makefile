@@ -1,5 +1,6 @@
 CC=clang++
-FLAGS=-g -Wall -std=c++11 -O3
+OPT=
+FLAGS=-g -Wall -std=c++11 $(OPT)
 LIBPATH=./lib
 INCPATH=./lib
 LIBS=-ltiny_obj_loader -lpng

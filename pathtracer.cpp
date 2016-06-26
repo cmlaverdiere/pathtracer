@@ -82,14 +82,14 @@ typedef struct {
 } Ray;
 
 class KdTree {
-    Box m_box;
-    KdTree *m_left, *m_right;
-    std::vector<Triangle> m_tris;
+    private:
+        Box m_box;
+        KdTree *m_left, *m_right;
+        std::vector<Triangle> m_tris;
 
-    KdTree(std::vector<Triangle> tris);
-
-    KdTree(std::vector<Triangle> &tris, int dim_split, int max_tris);
-    bool hit(Ray &ray);
+    public:
+        KdTree(std::vector<Triangle> &tris, int dim_split, int max_tris);
+        bool hit(Ray &ray);
 };
 
 vec3f to_vec3f(float* a);
@@ -116,22 +116,23 @@ KdTree::KdTree(std::vector<Triangle> &tris, int dim_split = 0,
     // Internal node creation.
 
     // Precalculate min/max/average coordinate info.
-    float dim_totals[3] = {0.0};
+    float midpoint_total = 0.0;
     float max_dims[3] = {0.0};
     float min_dims[3] = {INF};
     for (int i=0; i < tris.size(); i++) {
-        vec3f mid = tris[i].midpoint();
-        for (int dim=0; dim < 3; dim++) {
-            float val = mid[dim];
-            if (max_dims[dim] < val) max_dims[dim] = val;
-            if (min_dims[dim] > val) min_dims[dim] = val;
-            dim_totals[dim] += val;
+        for (int vert=0; vert < 3; vert++) {
+            for (int dim=0; dim < 3; dim++) {
+                float val = tris[i][vert][dim];
+                if (max_dims[dim] < val) max_dims[dim] = val;
+                if (min_dims[dim] > val) min_dims[dim] = val;
+            }
         }
+        midpoint_total += tris[i].midpoint()[dim_split];
     }
 
     // Find the average coordinate along dimension dim_split for left / right
     // tree separation.
-    float dim_avg = dim_totals[dim_split] / tris.size();
+    float dim_avg = midpoint_total / tris.size();
 
     // Use max / min dimensions for bounding box creation.
     vec3f lower_left = to_vec3f(min_dims);
@@ -444,6 +445,9 @@ int main(int argc, char* argv[])
     std::cout << "Loading model " << model_path << model_name << std::endl;
     load_scene(scene.shapes, scene.mats, scene.tris, model_path, model_name);
 
+    std::cout << "Constructing KdTree" << std::endl;
+    KdTree tree(scene.tris);
+
     float t = tan(fov / 2),
            b = -t,
            l = -t,
@@ -464,16 +468,25 @@ int main(int argc, char* argv[])
             v = -v;
 
             vec3f dir(u, v, -1.0);
-            vec3f eye(0, 1.0, 4.0);
+            vec3f eye(0, 1.0, 6.0); // ORIG z: 4
             Ray ray = { eye, unit(dir) };
 
-            std::vector<vec3f> samples;
-            for (int i=0; i < num_samples; i++) {
-                samples.push_back(trace(scene, ray, 0, num_bounces));
+            bool hit = tree.hit(ray);
+            vec3f hit_col(1.0, 1.0, 1.0);
+            vec3f miss_col(0.0, 0.0, 0.0);
+            if (hit) {
+                write_pixel(pixels, hit_col, x, y, width);
+            } else {
+                write_pixel(pixels, miss_col, x, y, width);
             }
 
-            vec3f average_sample = vec_average(samples);
-            write_pixel(pixels, average_sample, x, y, width);
+            /* std::vector<vec3f> samples; */
+            /* for (int i=0; i < num_samples; i++) { */
+            /*     samples.push_back(trace(scene, ray, 0, num_bounces)); */
+            /* } */
+
+            /* vec3f average_sample = vec_average(samples); */
+            /* write_pixel(pixels, average_sample, x, y, width); */
         }
 
         // Update progress bar.
