@@ -19,6 +19,7 @@
  */
 
 // OPT: threading / split into grid
+// OPT: GPU
 // DES: wrap Eigen
 
 #include <cstdlib>
@@ -76,8 +77,8 @@ typedef struct {
 } Ray;
 
 typedef struct {
-    Triangle* tri;
-    float dist;
+    Triangle* tri = NULL;
+    float dist = INF;
 } HitData;
 
 class KdTree {
@@ -214,7 +215,6 @@ KdTree::KdTree(std::vector<Triangle> tris, int dim_split,
     m_right = new KdTree(right_tris, next_dim);
 }
 
-// TODO pass around shader info
 HitData KdTree::hit(Ray &ray)
 {
     // At leaf
@@ -258,7 +258,7 @@ HitData KdTree::hit(Ray &ray)
         }
     }
 
-    HitData miss = { NULL, 0.0 };
+    HitData miss;
     return miss;
 }
 
@@ -427,12 +427,12 @@ vec3f shade(Scene &scene, Ray ray, int bounce=0, int max_bounces=3) {
 int main(int argc, char* argv[])
 {
     // Pathtracer settings
-    int num_samples = 100; // Samples per pixel
-    int num_bounces = 5; // Bounces per ray
+    int num_samples = 20; // Samples per pixel
+    int num_bounces = 3; // Bounces per ray
     float fov = M_PI / 5.0; // Camera field of view
 
     // REMINDER: Make dimensions different to find bugs.
-    int width = 256,
+    int width = 196,
         height = width;
     uint8_t pixels[height*width*3];
 
@@ -445,8 +445,11 @@ int main(int argc, char* argv[])
     // std::string model_path = "";
     // std::string model_name = "test.obj";
 
-    std::string model_path = "objs/";
-    std::string model_name = "CornellBox-Original.obj";
+    /* std::string model_path = "objs/"; */
+    /* std::string model_name = "CornellBox-Original.obj"; */
+
+    std::string model_path = "/home/chris/devel/graphics/models/CornellBox/";
+    std::string model_name = "CornellBox-Sphere.obj";
 
     Scene scene(model_path, model_name);
 
@@ -470,7 +473,7 @@ int main(int argc, char* argv[])
             v = -v;
 
             vec3f dir(u, v, -1.0);
-            vec3f eye(0, 1.0, 6.0); // ORIG z: 4
+            vec3f eye(0, 1.0, 4.0);
             Ray ray = { eye, unit(dir) };
 
             std::vector<vec3f> samples;
