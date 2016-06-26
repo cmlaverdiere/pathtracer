@@ -11,14 +11,15 @@
  * - Volumetric Pathtracing
  * - PBRT book
  *
- * Sources:
+ * References:
  * https://en.wikipedia.org/wiki/Path_tracing
  * https://en.wikipedia.org/wiki/Rendering_equation
  * http://www.flipcode.com/archives/Raytracing_Topics_Techniques-Part_7_Kd-Trees_and_More_Speed.shtml
+ * https://blog.frogslayer.com/kd-trees-for-faster-ray-tracing-with-triangles/
  */
 
-// OPT: kd-tree with SAH
-// OPT: threading
+// OPT: threading / split into grid
+// DES: wrap Eigen
 
 #include <cstdlib>
 #include <ctime>
@@ -39,17 +40,31 @@
 #include "png++/png.hpp"
 #include <eigen3/Eigen/Dense>
 
-#define INF std::numeric_limits<float>::infinity();
+#define INF std::numeric_limits<float>::infinity()
 
 typedef Eigen::Vector3f vec3f;
 typedef Eigen::Vector3d vec3i;
 
+// REF: move shape_data / index to shader
 typedef struct {
-    vec3f v1, v2, v3;
+    vec3f verts[3];
     vec3f norm;
     tinyobj::shape_t *shape_data;
     int index;
+
+    vec3f& operator[] (const int index);
+    vec3f midpoint();
 } Triangle;
+
+vec3f& Triangle::operator[] (const int index)
+{
+    return verts[index];
+}
+
+vec3f Triangle::midpoint()
+{
+    return (verts[0] + verts[1] + verts[2]) / 3.0;
+}
 
 typedef struct {
     std::vector<tinyobj::shape_t> shapes;
@@ -59,7 +74,7 @@ typedef struct {
 
 // Axis aligned bounding box (AABB)
 typedef struct {
-    vec3f p1, p2;
+    vec3f ll, ur;
 } Box;
 
 typedef struct {
@@ -67,16 +82,108 @@ typedef struct {
 } Ray;
 
 class KdTree {
-    Box box;
-    KdTree *left, *right;
+    Box m_box;
+    KdTree *m_left, *m_right;
+    std::vector<Triangle> m_tris;
 
     KdTree(std::vector<Triangle> tris);
-    float hit(vec3f &ray, vec3f &eye);
+
+    KdTree(std::vector<Triangle> &tris, int dim_split, int max_tris);
+    bool hit(Ray &ray);
 };
 
-KdTree::KdTree(std::vector<Triangle> tris)
-{
+vec3f to_vec3f(float* a);
+vec3f unit(vec3f &v);
+vec3f vec_average(std::vector<vec3f> vecs);
+float intersect_tri(Triangle &tri, Ray &ray);
+bool intersect_box(Box &box, Ray &ray);
 
+// Naive BSP construction (midpoint)
+// A tree is constructed with at most max_tris on each leaf.
+// OPT: use SAH
+// OPT: precalc midpoints
+KdTree::KdTree(std::vector<Triangle> &tris, int dim_split = 0,
+        int max_tris = 3)
+{
+    // Leaf creation.
+    if (tris.size() <= max_tris) {
+        m_tris = tris; // PROFILE copy
+        m_left = NULL;
+        m_right = NULL;
+        return;
+    }
+
+    // Internal node creation.
+
+    // Precalculate min/max/average coordinate info.
+    float dim_totals[3] = {0.0};
+    float max_dims[3] = {0.0};
+    float min_dims[3] = {INF};
+    for (int i=0; i < tris.size(); i++) {
+        vec3f mid = tris[i].midpoint();
+        for (int dim=0; dim < 3; dim++) {
+            float val = mid[dim];
+            if (max_dims[dim] < val) max_dims[dim] = val;
+            if (min_dims[dim] > val) min_dims[dim] = val;
+            dim_totals[dim] += val;
+        }
+    }
+
+    // Find the average coordinate along dimension dim_split for left / right
+    // tree separation.
+    float dim_avg = dim_totals[dim_split] / tris.size();
+
+    // Use max / min dimensions for bounding box creation.
+    vec3f lower_left = to_vec3f(min_dims);
+    vec3f upper_right = to_vec3f(max_dims);
+    m_box = { lower_left, upper_right };
+
+    // Split the tree at the midpoint and construct each half.
+    std::vector<Triangle> left_tris, right_tris;
+    for (int i=0; i < tris.size(); i++) {
+        if (tris[i].midpoint()[dim_split] < dim_avg) {
+            left_tris.push_back(tris[i]);
+        } else {
+            right_tris.push_back(tris[i]);
+        }
+    }
+
+    int next_dim = (dim_split + 1) % 3;
+    m_left = new KdTree(left_tris, next_dim);
+    m_right = new KdTree(right_tris, next_dim);
+}
+
+
+// TODO pass around shader info
+bool KdTree::hit(Ray &ray)
+{
+    // At leaf
+    if (m_left == NULL && m_right == NULL) {
+        float cl_dist = INF;
+        Triangle *cl_tri;
+
+        // Find which triangle (if any) our ray hits.
+        bool hit = false;
+        for (int t=0; t < m_tris.size(); t++) {
+            Triangle &tri = m_tris[t];
+            float dist = intersect_tri(tri, ray);
+
+            if (dist < cl_dist && dist != 0) {
+                hit = true;
+                cl_dist = dist;
+                cl_tri = &(m_tris[t]);
+            }
+        }
+
+        return hit;
+    }
+
+    // At interior node
+    else if (intersect_box(m_box, ray)) {
+        return m_left->hit(ray) || m_right->hit(ray);
+    }
+
+    return false;
 }
 
 void write_png(const char* filename, uint8_t* pixel_data,
@@ -158,9 +265,9 @@ void load_scene(std::vector<tinyobj::shape_t> &shapes,
             vec3f norm = to_vec3f(&mesh.normals[j1]);
 
             Triangle tri = {
-                .v1 = v1,
-                .v2 = v2,
-                .v3 = v3,
+                .verts[0] = v1,
+                .verts[1] = v2,
+                .verts[2] = v3,
                 .norm = norm,
                 .shape_data = &(shapes[s]),
                 .index = i
@@ -179,8 +286,8 @@ bool intersect_box(Box &box, Ray &ray)
     float t_min = -INF;
     float t_max = INF;
 
-    vec3f to_p1 = box.p1 - ray.pos;
-    vec3f to_p2 = box.p2 - ray.pos;
+    vec3f to_p1 = box.ll - ray.pos;
+    vec3f to_p2 = box.ur - ray.pos;
 
     // TODO extra checks.
     for (int i=0; i<3; i++) {
@@ -214,8 +321,8 @@ float intersect_tri(Triangle &tri, Ray &ray)
     float det, inv_det, u, v;
     float t;
 
-    e1 = tri.v2 - tri.v1;
-    e2 = tri.v3 - tri.v1;
+    e1 = tri[1] - tri[0];
+    e2 = tri[2] - tri[0];
 
     p = ray.dir.cross(e2);
     det = e1.dot(p);
@@ -223,7 +330,7 @@ float intersect_tri(Triangle &tri, Ray &ray)
     if (det > -EPSILON && det < EPSILON) return 0;
 
     inv_det = 1.0 / det;
-    r = ray.pos - tri.v1;
+    r = ray.pos - tri[0];
     u = r.dot(p) * inv_det;
 
     if (u < 0.0 || u > 1.0) return 0;
