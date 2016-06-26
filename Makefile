@@ -1,6 +1,7 @@
 CC=clang++
-OPT=
-FLAGS=-g -Wall -std=c++11 $(OPT)
+OPT=-O3
+FLAGS=-g -std=c++11 $(OPT) $(WARNINGS)
+WARNINGS= -Wall -Weffc++ -Wuninitialized
 LIBPATH=./lib
 INCPATH=./lib
 LIBS=-ltiny_obj_loader -lpng

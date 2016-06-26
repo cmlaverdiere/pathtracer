@@ -66,12 +66,6 @@ vec3f Triangle::midpoint()
     return (verts[0] + verts[1] + verts[2]) / 3.0;
 }
 
-typedef struct {
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> mats;
-    std::vector<Triangle> tris;
-} Scene;
-
 // Axis aligned bounding box (AABB)
 typedef struct {
     vec3f ll, ur;
@@ -81,6 +75,11 @@ typedef struct {
     vec3f pos, dir;
 } Ray;
 
+typedef struct {
+    Triangle* tri;
+    float dist;
+} HitData;
+
 class KdTree {
     private:
         Box m_box;
@@ -88,8 +87,18 @@ class KdTree {
         std::vector<Triangle> m_tris;
 
     public:
-        KdTree(std::vector<Triangle> &tris, int dim_split, int max_tris);
-        bool hit(Ray &ray);
+        KdTree(std::vector<Triangle> tris, int dim_split = 0,
+                int max_tris = 3);
+        HitData hit(Ray &ray);
+};
+
+class Scene {
+    public:
+        std::vector<tinyobj::shape_t> m_shapes;
+        std::vector<tinyobj::material_t> m_mats;
+        KdTree* m_tree;
+
+        Scene(std::string model_path, std::string model_name);
 };
 
 vec3f to_vec3f(float* a);
@@ -98,12 +107,63 @@ vec3f vec_average(std::vector<vec3f> vecs);
 float intersect_tri(Triangle &tri, Ray &ray);
 bool intersect_box(Box &box, Ray &ray);
 
+Scene::Scene(std::string model_path, std::string model_name)
+{
+    std::string err;
+
+    std::cout << "Loading model " << model_path << model_name << std::endl;
+    unsigned int flags =
+        tinyobj::triangulation | tinyobj::calculate_normals;
+
+    std::string obj_filename = model_path + model_name;
+    bool success = tinyobj::LoadObj(m_shapes, m_mats, err,
+            obj_filename.c_str(), model_path.c_str(), flags);
+
+    if (!success) {
+        std::cout << err << std::endl;
+        std::cerr << "Model failed to load, Exiting." << std::endl;
+        std::exit(EXIT_FAILURE);
+    } else {
+        std::cout << "Model loaded successfully." << std::endl;
+    }
+
+    std::cout << "Constructing triangles" << std::endl;
+    std::vector<Triangle> tris;
+    for (int s=0; s < m_shapes.size(); s++) {
+        tinyobj::shape_t shape = m_shapes[s];
+        tinyobj::mesh_t mesh = shape.mesh;
+        for (int i=0; i < mesh.indices.size(); i += 3) {
+            unsigned int j1 = mesh.indices[i]*3;
+            unsigned int j2 = mesh.indices[i+1]*3;
+            unsigned int j3 = mesh.indices[i+2]*3;
+            vec3f v1 = to_vec3f(&mesh.positions[j1]);
+            vec3f v2 = to_vec3f(&mesh.positions[j2]);
+            vec3f v3 = to_vec3f(&mesh.positions[j3]);
+            vec3f norm = to_vec3f(&mesh.normals[j1]);
+
+            Triangle tri = {
+                .verts[0] = v1,
+                .verts[1] = v2,
+                .verts[2] = v3,
+                .norm = norm,
+                .shape_data = &(m_shapes[s]),
+                .index = i
+            };
+
+            tris.push_back(tri);
+        }
+    }
+
+    std::cout << "Constructing KdTree" << std::endl;
+    m_tree = new KdTree(tris);
+}
+
 // Naive BSP construction (midpoint)
 // A tree is constructed with at most max_tris on each leaf.
 // OPT: use SAH
 // OPT: precalc midpoints
-KdTree::KdTree(std::vector<Triangle> &tris, int dim_split = 0,
-        int max_tris = 3)
+KdTree::KdTree(std::vector<Triangle> tris, int dim_split,
+        int max_tris)
 {
     // Leaf creation.
     if (tris.size() <= max_tris) {
@@ -154,14 +214,14 @@ KdTree::KdTree(std::vector<Triangle> &tris, int dim_split = 0,
     m_right = new KdTree(right_tris, next_dim);
 }
 
-
 // TODO pass around shader info
-bool KdTree::hit(Ray &ray)
+HitData KdTree::hit(Ray &ray)
 {
     // At leaf
     if (m_left == NULL && m_right == NULL) {
+        HitData hit_data;
         float cl_dist = INF;
-        Triangle *cl_tri;
+        Triangle *cl_tri = NULL;
 
         // Find which triangle (if any) our ray hits.
         bool hit = false;
@@ -176,15 +236,24 @@ bool KdTree::hit(Ray &ray)
             }
         }
 
-        return hit;
+        hit_data.tri = cl_tri;
+        hit_data.dist = cl_dist;
+        return hit_data;
     }
 
     // At interior node
     else if (intersect_box(m_box, ray)) {
-        return m_left->hit(ray) || m_right->hit(ray);
+        HitData left_hit = m_left->hit(ray);
+        HitData right_hit = m_right->hit(ray);
+        if (left_hit.tri == NULL) {
+            return right_hit;
+        } else {
+            return left_hit;
+        }
     }
 
-    return false;
+    HitData miss = { NULL, 0.0 };
+    return miss;
 }
 
 void write_png(const char* filename, uint8_t* pixel_data,
@@ -229,54 +298,6 @@ vec3f vec_average(std::vector<vec3f> vecs)
         accum += v;
     }
     return accum / vecs.size();
-}
-
-void load_scene(std::vector<tinyobj::shape_t> &shapes,
-        std::vector<tinyobj::material_t> &mats,
-        std::vector<Triangle> &tris,
-        std::string model_path, std::string model_name)
-{
-    std::string err;
-
-    unsigned int flags =
-        tinyobj::triangulation | tinyobj::calculate_normals;
-
-    std::string obj_filename = model_path + model_name;
-    bool success = tinyobj::LoadObj(shapes, mats, err, obj_filename.c_str(),
-            model_path.c_str(), flags);
-
-    if (!success) {
-        std::cout << err << std::endl;
-        std::cerr << "Model failed to load, Exiting." << std::endl;
-        std::exit(EXIT_FAILURE);
-    } else {
-        std::cout << "Model loaded successfully." << std::endl;
-    }
-
-    for (int s=0; s < shapes.size(); s++) {
-        tinyobj::shape_t shape = shapes[s];
-        tinyobj::mesh_t mesh = shape.mesh;
-        for (int i=0; i < mesh.indices.size(); i += 3) {
-            unsigned int j1 = mesh.indices[i]*3;
-            unsigned int j2 = mesh.indices[i+1]*3;
-            unsigned int j3 = mesh.indices[i+2]*3;
-            vec3f v1 = to_vec3f(&mesh.positions[j1]);
-            vec3f v2 = to_vec3f(&mesh.positions[j2]);
-            vec3f v3 = to_vec3f(&mesh.positions[j3]);
-            vec3f norm = to_vec3f(&mesh.normals[j1]);
-
-            Triangle tri = {
-                .verts[0] = v1,
-                .verts[1] = v2,
-                .verts[2] = v3,
-                .norm = norm,
-                .shape_data = &(shapes[s]),
-                .index = i
-            };
-
-            tris.push_back(tri);
-        }
-    }
 }
 
 // Modified slabs method from Real Time Rendering ch 16.7.1
@@ -359,79 +380,58 @@ vec3f rand_hemisphere_vec(vec3f &norm)
     return unit(randy);
 }
 
-vec3f trace(Scene &scene, Ray ray, int bounce=0, int max_bounces=3)
-{
-    vec3f out_color(0.0, 0.0, 0.0);
-    float cl_dist = INF;
-    Triangle *cl_tri;
+vec3f shade(Scene &scene, Ray ray, int bounce=0, int max_bounces=3) {
+    HitData hit_data = scene.m_tree->hit(ray);
+    Triangle* tri = hit_data.tri;
+    float dist = hit_data.dist;
 
-    // Find which triangle (if any) our ray hits.
-    bool hit = false;
-    for (int t=0; t < scene.tris.size(); t++) {
-        Triangle &tri = scene.tris[t];
-        float dist = intersect_tri(tri, ray);
-
-        if (dist < cl_dist && dist != 0) {
-            hit = true;
-            cl_dist = dist;
-            cl_tri = &(scene.tris[t]);
-        }
+    if (tri == NULL) {
+        return vec3f(0.0, 0.0, 0.0);
     }
 
-    // If the ray hit a triangle, compute the output color.
-    if (hit) {
-        tinyobj::mesh_t mesh = cl_tri->shape_data->mesh;
-        tinyobj::material_t mat = scene.mats[
-            mesh.material_ids[cl_tri->index / 3]];
+    tinyobj::mesh_t mesh = tri->shape_data->mesh;
+    tinyobj::material_t mat = scene.m_mats[
+        mesh.material_ids[tri->index / 3]];
 
-        // Return black if we've bounced around enough.
-        if (bounce > max_bounces) {
-            return vec3f(0.0, 0.0, 0.0);
-        }
-
-        // Material properties
-        Ray reflect_ray;
-        reflect_ray.pos = ray.pos + cl_dist * ray.dir;
-        vec3f emittance = to_vec3f(mat.emission);
-        vec3f reflectance = to_vec3f(mat.diffuse);
-        vec3f &norm = cl_tri->norm;
-
-        // Reflect in a random direction on the normal's unit hemisphere.
-        reflect_ray.dir = rand_hemisphere_vec(norm);
-
-        // Calculate BRDF
-        float cos_theta = norm.dot(-ray.dir);
-        vec3f brdf = 2 * reflectance * cos_theta;
-        vec3f reflected_amt = trace(scene, reflect_ray, bounce + 1,
-                max_bounces);
-
-        // Final color
-        out_color = emittance + (brdf.cwiseProduct(reflected_amt));
+    // Return black if we've bounced around enough.
+    if (bounce > max_bounces) {
+        return vec3f(0.0, 0.0, 0.0);
     }
 
-    return out_color;
+    // Material properties
+    Ray reflect_ray;
+    reflect_ray.pos = ray.pos + dist * ray.dir;
+    vec3f emittance = to_vec3f(mat.emission);
+    vec3f reflectance = to_vec3f(mat.diffuse);
+    vec3f &norm = tri->norm;
+
+    // Reflect in a random direction on the normal's unit hemisphere.
+    reflect_ray.dir = rand_hemisphere_vec(norm);
+
+    // Calculate BRDF
+    float cos_theta = norm.dot(-ray.dir);
+    vec3f brdf = 2 * reflectance * cos_theta;
+    vec3f reflected_amt = shade(scene, reflect_ray, bounce + 1,
+            max_bounces);
+
+    // Final color
+    return emittance + (brdf.cwiseProduct(reflected_amt));
 }
 
 int main(int argc, char* argv[])
 {
     // Pathtracer settings
-    int num_samples = 30; // Samples per pixel
-    int num_bounces = 4; // Bounces per ray
+    int num_samples = 100; // Samples per pixel
+    int num_bounces = 5; // Bounces per ray
     float fov = M_PI / 5.0; // Camera field of view
 
     // REMINDER: Make dimensions different to find bugs.
-    int width = 128,
+    int width = 256,
         height = width;
     uint8_t pixels[height*width*3];
 
     // For random vectors
     srand(time(NULL));
-
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> mats;
-    std::vector<Triangle> tris;
-
-    Scene scene = {shapes, mats, tris};
 
     std::cout << "Pathtracer - Chris Laverdiere 2016" << std::endl;
 
@@ -442,11 +442,7 @@ int main(int argc, char* argv[])
     std::string model_path = "objs/";
     std::string model_name = "CornellBox-Original.obj";
 
-    std::cout << "Loading model " << model_path << model_name << std::endl;
-    load_scene(scene.shapes, scene.mats, scene.tris, model_path, model_name);
-
-    std::cout << "Constructing KdTree" << std::endl;
-    KdTree tree(scene.tris);
+    Scene scene(model_path, model_name);
 
     float t = tan(fov / 2),
            b = -t,
@@ -471,22 +467,13 @@ int main(int argc, char* argv[])
             vec3f eye(0, 1.0, 6.0); // ORIG z: 4
             Ray ray = { eye, unit(dir) };
 
-            bool hit = tree.hit(ray);
-            vec3f hit_col(1.0, 1.0, 1.0);
-            vec3f miss_col(0.0, 0.0, 0.0);
-            if (hit) {
-                write_pixel(pixels, hit_col, x, y, width);
-            } else {
-                write_pixel(pixels, miss_col, x, y, width);
+            std::vector<vec3f> samples;
+            for (int i=0; i < num_samples; i++) {
+                samples.push_back(shade(scene, ray, 0, num_bounces));
             }
 
-            /* std::vector<vec3f> samples; */
-            /* for (int i=0; i < num_samples; i++) { */
-            /*     samples.push_back(trace(scene, ray, 0, num_bounces)); */
-            /* } */
-
-            /* vec3f average_sample = vec_average(samples); */
-            /* write_pixel(pixels, average_sample, x, y, width); */
+            vec3f average_sample = vec_average(samples);
+            write_pixel(pixels, average_sample, x, y, width);
         }
 
         // Update progress bar.
