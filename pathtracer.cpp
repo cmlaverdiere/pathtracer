@@ -248,7 +248,13 @@ HitData KdTree::hit(Ray &ray)
         if (left_hit.tri == NULL) {
             return right_hit;
         } else {
-            return left_hit;
+            // We may hit triangles in both trees. In this case, take the
+            // closer hit.
+            if (left_hit.dist < right_hit.dist) {
+                return left_hit;
+            } else {
+                return right_hit;
+            }
         }
     }
 
