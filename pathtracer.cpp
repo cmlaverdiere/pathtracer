@@ -46,6 +46,10 @@
 typedef Eigen::Vector3f vec3f;
 typedef Eigen::Vector3d vec3i;
 
+typedef struct {
+    vec3f pos, dir;
+} Ray;
+
 // REF: move shape_data / index to shader
 typedef struct {
     vec3f verts[3];
@@ -55,6 +59,7 @@ typedef struct {
 
     vec3f& operator[] (const int index);
     vec3f midpoint();
+    float intersect(Ray &ray);
 } Triangle;
 
 vec3f& Triangle::operator[] (const int index)
@@ -68,13 +73,11 @@ vec3f Triangle::midpoint()
 }
 
 // Axis aligned bounding box (AABB)
-typedef struct {
-    vec3f ll, ur;
-} Box;
-
-typedef struct {
-    vec3f pos, dir;
-} Ray;
+class Box {
+    public:
+        vec3f ll, ur;
+        bool intersect(Ray &ray);
+};
 
 typedef struct {
     Triangle* tri = NULL;
@@ -105,8 +108,6 @@ class Scene {
 vec3f to_vec3f(float* a);
 vec3f unit(vec3f &v);
 vec3f vec_average(std::vector<vec3f> vecs);
-float intersect_tri(Triangle &tri, Ray &ray);
-bool intersect_box(Box &box, Ray &ray);
 
 Scene::Scene(std::string model_path, std::string model_name)
 {
@@ -198,7 +199,8 @@ KdTree::KdTree(std::vector<Triangle> tris, int dim_split,
     // Use max / min dimensions for bounding box creation.
     vec3f lower_left = to_vec3f(min_dims);
     vec3f upper_right = to_vec3f(max_dims);
-    m_box = { lower_left, upper_right };
+    m_box.ll = lower_left;
+    m_box.ur = upper_right;
 
     // Split the tree at the midpoint and construct each half.
     std::vector<Triangle> left_tris, right_tris;
@@ -227,7 +229,7 @@ HitData KdTree::hit(Ray &ray)
         bool hit = false;
         for (int t=0; t < m_tris.size(); t++) {
             Triangle &tri = m_tris[t];
-            float dist = intersect_tri(tri, ray);
+            float dist = tri.intersect(ray);
 
             if (dist < cl_dist && dist != 0) {
                 hit = true;
@@ -242,7 +244,7 @@ HitData KdTree::hit(Ray &ray)
     }
 
     // At interior node
-    else if (intersect_box(m_box, ray)) {
+    else if (m_box.intersect(ray)) {
         HitData left_hit = m_left->hit(ray);
         HitData right_hit = m_right->hit(ray);
         if (left_hit.tri == NULL) {
@@ -309,13 +311,13 @@ vec3f vec_average(std::vector<vec3f> vecs)
 // Modified slabs method from Real Time Rendering ch 16.7.1
 // PROFILE: Branch all at once.
 // OPT: Try without div by f.
-bool intersect_box(Box &box, Ray &ray)
+bool Box::intersect(Ray &ray)
 {
     float t_min = -INF;
     float t_max = INF;
 
-    vec3f to_p1 = box.ll - ray.pos;
-    vec3f to_p2 = box.ur - ray.pos;
+    vec3f to_p1 = ll - ray.pos;
+    vec3f to_p2 = ur - ray.pos;
 
     // TODO extra checks.
     for (int i=0; i<3; i++) {
@@ -340,7 +342,7 @@ bool intersect_box(Box &box, Ray &ray)
 
 // https://en.wikipedia.org/wiki/Moller-Trumbore_intersection_algorithm
 // OPT: precalculate dominant triangle axis.
-float intersect_tri(Triangle &tri, Ray &ray)
+float Triangle::intersect(Ray &ray)
 {
     float EPSILON = 0.0001;
 
@@ -349,8 +351,8 @@ float intersect_tri(Triangle &tri, Ray &ray)
     float det, inv_det, u, v;
     float t;
 
-    e1 = tri[1] - tri[0];
-    e2 = tri[2] - tri[0];
+    e1 = verts[1] - verts[0];
+    e2 = verts[2] - verts[0];
 
     p = ray.dir.cross(e2);
     det = e1.dot(p);
@@ -358,7 +360,7 @@ float intersect_tri(Triangle &tri, Ray &ray)
     if (det > -EPSILON && det < EPSILON) return 0;
 
     inv_det = 1.0 / det;
-    r = ray.pos - tri[0];
+    r = ray.pos - verts[0];
     u = r.dot(p) * inv_det;
 
     if (u < 0.0 || u > 1.0) return 0;
