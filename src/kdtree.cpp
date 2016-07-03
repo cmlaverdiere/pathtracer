@@ -1,14 +1,12 @@
 #include <vector>
 
 #include "kdtree.hpp"
-#include "png++/png.hpp"
 
 // Naive BSP construction (midpoint)
 // A tree is constructed with at most max_tris on each leaf.
 // OPT: use SAH
 // OPT: precalc midpoints
-KdTree::KdTree(std::vector<Triangle> tris, int dim_split,
-        int max_tris)
+KdTree::KdTree(std::vector<Triangle> tris, int dim_split, int max_tris)
 {
     // Leaf creation.
     if (tris.size() <= max_tris) {
@@ -106,4 +104,3 @@ TriangleHit KdTree::hit(Ray &ray)
     TriangleHit miss;
     return miss;
 }
-

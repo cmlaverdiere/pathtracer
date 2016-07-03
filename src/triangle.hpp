@@ -1,8 +1,7 @@
 #ifndef TRIANGLE_H
 #define TRIANGLE_H
 
-#include "tiny_obj_loader.h"
-
+#include "model.hpp"
 #include "ray.hpp"
 #include "utils.hpp"
 #include "vector.hpp"
@@ -11,7 +10,7 @@
 typedef struct {
     vec3f verts[3];
     vec3f norm;
-    tinyobj::shape_t *shape_data;
+    Shape *shape_data;
     int index;
 
     vec3f& operator[] (const int index);

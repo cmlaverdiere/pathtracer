@@ -1,10 +1,7 @@
 #include <iostream>
 
-#include "tiny_obj_loader.h"
-
+#include "model.hpp"
 #include "scene.hpp"
-
-// TODO make model class, own file.
 
 Scene::Scene(std::string model_path, std::string model_name)
 {
@@ -29,7 +26,7 @@ Scene::Scene(std::string model_path, std::string model_name)
     std::cout << "Constructing triangles" << std::endl;
     std::vector<Triangle> tris;
     for (int s=0; s < m_shapes.size(); s++) {
-        tinyobj::shape_t shape = m_shapes[s];
+        Shape shape = m_shapes[s];
         tinyobj::mesh_t mesh = shape.mesh;
         for (int i=0; i < mesh.indices.size(); i += 3) {
             unsigned int j1 = mesh.indices[i]*3;
@@ -68,7 +65,7 @@ vec3f Scene::shade(Ray ray, int bounce, int max_bounces)
     }
 
     tinyobj::mesh_t mesh = tri->shape_data->mesh;
-    tinyobj::material_t mat = m_mats[mesh.material_ids[tri->index / 3]];
+    Material mat = m_mats[mesh.material_ids[tri->index / 3]];
 
     // Return black if we've bounced around enough.
     if (bounce > max_bounces) {
