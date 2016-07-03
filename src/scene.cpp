@@ -1,5 +1,8 @@
 #include <iostream>
+#include <ctime>
+#include <time.h>
 
+#include "image.hpp"
 #include "model.hpp"
 #include "scene.hpp"
 
@@ -103,3 +106,58 @@ vec3f Scene::shade(Ray ray, int bounce, int max_bounces)
     /* return emittance + brdf.cwiseProduct(reflected_amt + spec_reflected_amt); */
 }
 
+void Scene::render(RenderOpts &opts, std::string outfile_path)
+{
+    // Seed for places we need random vector directions.
+    srand(time(NULL));
+
+    uint8_t pixels[opts.image_height * opts.image_width * 3];
+
+    // For drawing a rendering progress bar.
+    int bar_width = 10;
+    int dot_inc = opts.image_height / bar_width;
+
+    // For timing how long the rendering takes.
+    std::clock_t start;
+    start = std::clock();
+
+    // Top, bottom, left, right locations of frustum plane.
+    float t = tan(opts.fov / 2),
+           b = -t,
+           l = -t,
+           r = t;
+
+    std::cout << "{";
+    for (int y=0; y < opts.image_height; y++) {
+        for (int x=0; x < opts.image_width; x++) {
+            float u = l + ((r - l) * (x + 0.5) / opts.image_height);
+            float v = b + ((t - b) * (y + 0.5) / opts.image_width);
+            v = -v;
+
+            vec3f dir(u, v, -1.0);
+            vec3f eye(0, 1.0, 4.0);
+            Ray ray = { eye, unit(dir) };
+
+            std::vector<vec3f> samples;
+            for (int i=0; i < opts.num_samples; i++) {
+                samples.push_back(shade(ray, 0, opts.num_bounces));
+            }
+
+            vec3f average_sample = vec_average(samples);
+            write_pixel(pixels, average_sample, x, y, opts.image_width);
+        }
+
+        // Update progress bar.
+        if (y % dot_inc == 0) {
+            std::cout << "." << std::flush;
+        }
+    }
+    std::cout << "}" << std::endl;
+
+    std::cout << "Saving image to " << outfile_path << std::endl;
+    write_png(outfile_path.c_str(), pixels, opts.image_width, opts.image_height);
+
+    std::cout << "Traced image in " <<
+        (std::clock() - start) / (float) (CLOCKS_PER_SEC) << " seconds."
+        << std::endl;
+}
