@@ -33,10 +33,10 @@ int main(int argc, char* argv[])
     // Pathtracer settings
     RenderOpts render_opts =
     {
-        .image_width = 128,
-        .image_height = 128,
-        .num_samples = 20,
-        .num_bounces = 2,
+        .image_width = 512,
+        .image_height = 512,
+        .num_samples = 200,
+        .num_bounces = 3,
         .x_threads = 4,
         .y_threads = 4,
         .fov = M_PI / 5.0,
