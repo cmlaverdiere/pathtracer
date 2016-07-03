@@ -57,3 +57,52 @@ Scene::Scene(std::string model_path, std::string model_name)
     m_tree = new KdTree(tris);
 }
 
+vec3f Scene::shade(Ray ray, int bounce, int max_bounces)
+{
+    TriangleHit hit_data = m_tree->hit(ray);
+    Triangle* tri = hit_data.tri;
+    float dist = hit_data.dist;
+
+    if (tri == NULL) {
+        return vec3f(0.0, 0.0, 0.0);
+    }
+
+    tinyobj::mesh_t mesh = tri->shape_data->mesh;
+    tinyobj::material_t mat = m_mats[mesh.material_ids[tri->index / 3]];
+
+    // Return black if we've bounced around enough.
+    if (bounce > max_bounces) {
+        return vec3f(0.0, 0.0, 0.0);
+    }
+
+    // Material properties
+    Ray reflect_ray;
+    reflect_ray.pos = ray.pos + dist * ray.dir;
+    vec3f emittance = to_vec3f(mat.emission);
+    vec3f reflectance = to_vec3f(mat.diffuse);
+    /* vec3f specular = to_vec3f(mat.specular); */
+    vec3f &norm = tri->norm;
+
+    // Reflect in a random direction on the normal's unit hemisphere.
+    reflect_ray.dir = rand_hemisphere_vec(norm);
+
+    // Calculate BRDF
+    float cos_theta = norm.dot(-ray.dir);
+    vec3f brdf = 2 * reflectance * cos_theta;
+    vec3f reflected_amt = shade(reflect_ray, bounce + 1, max_bounces);
+
+    // For specular, reflect perfectly.
+    /* Ray spec_reflect_ray; */
+    /* vec3f spec_reflected_amt; */
+    /* if (specular.norm() != 0.0) { */
+    /*     spec_reflect_ray.pos = reflect_ray.pos; */
+    /*     spec_reflect_ray.dir = ray.dir + (2 * cos_theta * norm); */
+    /*     spec_reflected_amt = shade(spec_reflect_ray, bounce + 1, */
+    /*             max_bounces); */
+    /* } */
+
+    // Final color
+    return emittance + brdf.cwiseProduct(reflected_amt);
+    /* return emittance + brdf.cwiseProduct(reflected_amt + spec_reflected_amt); */
+}
+

@@ -36,65 +36,9 @@
 #include <string.h>
 #include <time.h>
 
-#include "aabb.hpp"
 #include "image.hpp"
-#include "kdtree.hpp"
 #include "ray.hpp"
 #include "scene.hpp"
-#include "triangle.hpp"
-#include "utils.hpp"
-#include "vector.hpp"
-
-// TODO Scene method?
-vec3f shade(Scene &scene, Ray ray, int bounce=0, int max_bounces=3) {
-    TriangleHit hit_data = scene.m_tree->hit(ray);
-    Triangle* tri = hit_data.tri;
-    float dist = hit_data.dist;
-
-    if (tri == NULL) {
-        return vec3f(0.0, 0.0, 0.0);
-    }
-
-    tinyobj::mesh_t mesh = tri->shape_data->mesh;
-    tinyobj::material_t mat = scene.m_mats[
-        mesh.material_ids[tri->index / 3]];
-
-    // Return black if we've bounced around enough.
-    if (bounce > max_bounces) {
-        return vec3f(0.0, 0.0, 0.0);
-    }
-
-    // Material properties
-    Ray reflect_ray;
-    reflect_ray.pos = ray.pos + dist * ray.dir;
-    vec3f emittance = to_vec3f(mat.emission);
-    vec3f reflectance = to_vec3f(mat.diffuse);
-    /* vec3f specular = to_vec3f(mat.specular); */
-    vec3f &norm = tri->norm;
-
-    // Reflect in a random direction on the normal's unit hemisphere.
-    reflect_ray.dir = rand_hemisphere_vec(norm);
-
-    // Calculate BRDF
-    float cos_theta = norm.dot(-ray.dir);
-    vec3f brdf = 2 * reflectance * cos_theta;
-    vec3f reflected_amt = shade(scene, reflect_ray, bounce + 1,
-            max_bounces);
-
-    // For specular, reflect perfectly.
-    /* Ray spec_reflect_ray; */
-    /* vec3f spec_reflected_amt; */
-    /* if (specular.norm() != 0.0) { */
-    /*     spec_reflect_ray.pos = reflect_ray.pos; */
-    /*     spec_reflect_ray.dir = ray.dir + (2 * cos_theta * norm); */
-    /*     spec_reflected_amt = shade(scene, spec_reflect_ray, bounce + 1, */
-    /*             max_bounces); */
-    /* } */
-
-    // Final color
-    return emittance + brdf.cwiseProduct(reflected_amt);
-    /* return emittance + brdf.cwiseProduct(reflected_amt + spec_reflected_amt); */
-}
 
 int main(int argc, char* argv[])
 {
@@ -150,7 +94,7 @@ int main(int argc, char* argv[])
 
             std::vector<vec3f> samples;
             for (int i=0; i < num_samples; i++) {
-                samples.push_back(shade(scene, ray, 0, num_bounces));
+                samples.push_back(scene.shade(ray, 0, num_bounces));
             }
 
             vec3f average_sample = vec_average(samples);
