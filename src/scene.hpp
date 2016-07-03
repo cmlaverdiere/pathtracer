@@ -20,13 +20,22 @@ typedef struct {
 } RenderOpts;
 
 class Scene {
-    public:
+    private:
         std::vector<Shape> m_shapes;
         std::vector<Material> m_mats;
         KdTree* m_tree;
 
-        Scene(std::string model_path, std::string model_name);
+        /* Cast a ray into the scene and return a color. */
         vec3f shade(Ray ray, int bounce=0, int max_bounces=3);
+
+        /* Renders a block of the image with upper left at (startx, starty) and
+         * lower right at (startx + lenx, starty + leny).
+         */
+        void render_block(RenderOpts &opts, uint8_t *pixels,
+                int startx, int starty, int lenx, int leny);
+
+    public:
+        Scene(std::string model_path, std::string model_name);
         void render(RenderOpts &opts, std::string outfile_path);
 };
 

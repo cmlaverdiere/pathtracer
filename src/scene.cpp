@@ -1,6 +1,9 @@
+#include <chrono>
+#include <functional>
 #include <iostream>
-#include <ctime>
+#include <thread>
 #include <time.h>
+#include <vector>
 
 #include "image.hpp"
 #include "model.hpp"
@@ -113,13 +116,45 @@ void Scene::render(RenderOpts &opts, std::string outfile_path)
 
     uint8_t pixels[opts.image_height * opts.image_width * 3];
 
-    // For drawing a rendering progress bar.
-    int bar_width = 10;
-    int dot_inc = opts.image_height / bar_width;
-
     // For timing how long the rendering takes.
-    std::clock_t start;
-    start = std::clock();
+    auto start = std::chrono::steady_clock::now();
+
+    // OPT: Some grid cells will finish faster than others. Consider another
+    // method.
+    std::vector<std::thread> threads;
+
+    int lenx = opts.image_width / opts.x_threads;
+    int leny = opts.image_height / opts.y_threads;
+    for (int x=0; x < opts.x_threads; x++) {
+        for (int y=0; y < opts.y_threads; y++) {
+            threads.push_back(
+                    std::thread(
+                        &Scene::render_block, this,
+                        std::ref(opts), &pixels[0], x * lenx, y * leny, lenx, leny
+                        )
+                    );
+        }
+    }
+
+    for (int i=0; i < threads.size(); i++){
+        threads[i].join();
+    }
+
+    std::cout << "Saving image to " << outfile_path << std::endl;
+    write_png(outfile_path.c_str(), pixels, opts.image_width, opts.image_height);
+
+    auto end = std::chrono::steady_clock::now();
+    std::cout << "Traced image in " <<
+        (std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000.0)
+        << " seconds." << std::endl;
+}
+
+void Scene::render_block(RenderOpts &opts, uint8_t *pixels,
+                int startx, int starty, int lenx, int leny)
+{
+    // For drawing a rendering progress bar.
+    /* int bar_width = 10; */
+    /* int dot_inc = opts.image_height / bar_width; */
 
     // Top, bottom, left, right locations of frustum plane.
     float t = tan(opts.fov / 2),
@@ -127,9 +162,10 @@ void Scene::render(RenderOpts &opts, std::string outfile_path)
            l = -t,
            r = t;
 
-    std::cout << "{";
-    for (int y=0; y < opts.image_height; y++) {
-        for (int x=0; x < opts.image_width; x++) {
+    /* std::cout << "{"; */
+
+    for (int y=starty; y < starty + leny; y++) {
+        for (int x=startx; x < startx + lenx; x++) {
             float u = l + ((r - l) * (x + 0.5) / opts.image_height);
             float v = b + ((t - b) * (y + 0.5) / opts.image_width);
             v = -v;
@@ -148,16 +184,11 @@ void Scene::render(RenderOpts &opts, std::string outfile_path)
         }
 
         // Update progress bar.
-        if (y % dot_inc == 0) {
-            std::cout << "." << std::flush;
-        }
+        /* if (y % dot_inc == 0) { */
+        /*     std::cout << "." << std::flush; */
+        /* } */
     }
-    std::cout << "}" << std::endl;
 
-    std::cout << "Saving image to " << outfile_path << std::endl;
-    write_png(outfile_path.c_str(), pixels, opts.image_width, opts.image_height);
+    /* std::cout << "}" << std::endl; */
 
-    std::cout << "Traced image in " <<
-        (std::clock() - start) / (float) (CLOCKS_PER_SEC) << " seconds."
-        << std::endl;
 }

@@ -37,10 +37,11 @@ int main(int argc, char* argv[])
         .image_height = 128,
         .num_samples = 20,
         .num_bounces = 2,
-        .x_threads = 1,
-        .y_threads = 1,
+        .x_threads = 4,
+        .y_threads = 4,
         .fov = M_PI / 5.0,
     };
+
 
     std::string model_path = "objs/";
     std::string model_name = "CornellBox-Original.obj";
