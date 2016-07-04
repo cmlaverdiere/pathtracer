@@ -18,7 +18,6 @@
  * https://blog.frogslayer.com/kd-trees-for-faster-ray-tracing-with-triangles/
  */
 
-// OPT: threading / split into grid
 // OPT: GPU or SIMD
 
 #include <iostream>
@@ -33,21 +32,21 @@ int main(int argc, char* argv[])
     // Pathtracer settings
     RenderOpts render_opts =
     {
-        .image_width = 512,
-        .image_height = 512,
-        .num_samples = 200,
-        .num_bounces = 3,
+        .image_width = 256,
+        .image_height = 256,
+        .num_samples = 100,
+        .num_bounces = 5,
         .x_threads = 4,
         .y_threads = 4,
         .fov = M_PI / 5.0,
     };
 
-
+    /* std::string model_path = "objs/"; */
+    /* std::string model_name = "CornellBox-Original.obj"; */
     std::string model_path = "objs/";
-    std::string model_name = "CornellBox-Original.obj";
+    std::string model_name = "CornellBox-Sphere.obj";
+
     std::string outfile_path = "rt.png";
-    /* std::string model_path = "/home/chris/devel/graphics/models/CornellBox/"; */
-    /* std::string model_name = "CornellBox-Sphere.obj"; */
 
     std::cout << "Preprocessing scene" << std::endl;
     Scene scene(model_path, model_name);

@@ -83,7 +83,7 @@ vec3f Scene::shade(Ray ray, int bounce, int max_bounces)
     reflect_ray.pos = ray.pos + dist * ray.dir;
     vec3f emittance = to_vec3f(mat.emission);
     vec3f reflectance = to_vec3f(mat.diffuse);
-    /* vec3f specular = to_vec3f(mat.specular); */
+    vec3f specular = to_vec3f(mat.specular);
     vec3f &norm = tri->norm;
 
     // Reflect in a random direction on the normal's unit hemisphere.
@@ -95,18 +95,17 @@ vec3f Scene::shade(Ray ray, int bounce, int max_bounces)
     vec3f reflected_amt = shade(reflect_ray, bounce + 1, max_bounces);
 
     // For specular, reflect perfectly.
-    /* Ray spec_reflect_ray; */
-    /* vec3f spec_reflected_amt; */
-    /* if (specular.norm() != 0.0) { */
-    /*     spec_reflect_ray.pos = reflect_ray.pos; */
-    /*     spec_reflect_ray.dir = ray.dir + (2 * cos_theta * norm); */
-    /*     spec_reflected_amt = shade(spec_reflect_ray, bounce + 1, */
-    /*             max_bounces); */
-    /* } */
+    Ray spec_reflect_ray;
+    vec3f spec_reflected_amt;
+    if (specular.norm() != 0.0) {
+        spec_reflect_ray.pos = reflect_ray.pos;
+        spec_reflect_ray.dir = ray.dir + (2 * cos_theta * norm);
+        spec_reflected_amt = shade(spec_reflect_ray, bounce + 1,
+                max_bounces);
+    }
 
     // Final color
-    return emittance + brdf.cwiseProduct(reflected_amt);
-    /* return emittance + brdf.cwiseProduct(reflected_amt + spec_reflected_amt); */
+    return emittance + brdf.cwiseProduct(reflected_amt + spec_reflected_amt);
 }
 
 void Scene::render(RenderOpts &opts, std::string outfile_path)
