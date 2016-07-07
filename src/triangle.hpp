@@ -15,7 +15,7 @@ typedef struct {
 
     vec3f& operator[] (const int index);
     vec3f midpoint();
-    float intersect(Ray &ray);
+    float intersect(const Ray &ray);
 } Triangle;
 
 typedef struct {

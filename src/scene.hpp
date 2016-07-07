@@ -25,18 +25,22 @@ class Scene {
         std::vector<Material> m_mats;
         KdTree* m_tree;
 
+        /* Sample the pixel intersected by ray with num_samples samples. */
+        std::vector<vec3f> sample(const Ray &ray, int num_samples,
+                int num_bounces);
+
         /* Cast a ray into the scene and return a color. */
         vec3f shade(Ray ray, int bounce=0, int max_bounces=3);
 
         /* Renders a block of the image with upper left at (startx, starty) and
          * lower right at (startx + lenx, starty + leny).
          */
-        void render_block(RenderOpts &opts, uint8_t *pixels,
+        void render_block(const RenderOpts &opts, uint8_t *pixels,
                 int startx, int starty, int lenx, int leny);
 
     public:
         Scene(std::string model_path, std::string model_name);
-        void render(RenderOpts &opts, std::string outfile_path);
+        void render(const RenderOpts &opts, std::string outfile_path);
 };
 
 #endif

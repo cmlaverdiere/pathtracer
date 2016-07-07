@@ -8,7 +8,7 @@
 class Box {
     public:
         vec3f ll, ur;
-        bool intersect(Ray &ray);
+        bool intersect(const Ray &ray);
 };
 
 #endif

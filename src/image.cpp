@@ -3,7 +3,7 @@
 
 #include "png++/png.hpp"
 
-void write_pixel(uint8_t* pixels, vec3f &color, int x, int y, int width)
+void write_pixel(uint8_t* pixels, const vec3f &color, int x, int y, int width)
 {
     // assert(color.x() <= 1.0 && color.y() <= 1.0 && color.z() <= 1.0);
     pixels[3 * (y * width + x)] = 255 * color.x();

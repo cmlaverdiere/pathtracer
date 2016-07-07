@@ -1,6 +1,6 @@
 #include "vector.hpp"
 
-// DES: wrap Eigen
+#include <numeric>
 
 vec3f to_vec3f(float* a)
 {
@@ -8,27 +8,26 @@ vec3f to_vec3f(float* a)
     return v;
 }
 
-vec3f unit(vec3f &v)
+vec3f unit(const vec3f &v)
 {
     vec3f vn(v / v.norm());
     return vn;
 }
 
-vec3f vec_average(std::vector<vec3f> vecs)
+vec3f vec_average(const std::vector<vec3f> &vecs)
 {
     vec3f accum(0.0, 0.0, 0.0);
-    for (vec3f v : vecs) {
-        accum += v;
-    }
+    accum = std::accumulate(vecs.begin(), vecs.end(), accum);
     return accum / vecs.size();
 }
 
-vec3f rand_hemisphere_vec(vec3f &norm)
+vec3f rand_hemisphere_vec(const vec3f &norm)
 {
     vec3f randy = Eigen::Vector3f::Random();
     if (randy.dot(norm) < 0) {
-        randy = -randy;
+        return -randy;
+    } else {
+        return randy;
     }
-    return unit(randy);
 }
 

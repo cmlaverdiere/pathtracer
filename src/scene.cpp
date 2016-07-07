@@ -108,7 +108,7 @@ vec3f Scene::shade(Ray ray, int bounce, int max_bounces)
     return emittance + brdf.cwiseProduct(reflected_amt + spec_reflected_amt);
 }
 
-void Scene::render(RenderOpts &opts, std::string outfile_path)
+void Scene::render(const RenderOpts &opts, std::string outfile_path)
 {
     // Seed for places we need random vector directions.
     srand(time(NULL));
@@ -148,7 +148,8 @@ void Scene::render(RenderOpts &opts, std::string outfile_path)
         << " seconds." << std::endl;
 }
 
-void Scene::render_block(RenderOpts &opts, uint8_t *pixels,
+// TODO refactor RenderOpts to be a class member.
+void Scene::render_block(const RenderOpts &opts, uint8_t *pixels,
                 int startx, int starty, int lenx, int leny)
 {
     // For drawing a rendering progress bar.
@@ -173,10 +174,8 @@ void Scene::render_block(RenderOpts &opts, uint8_t *pixels,
             vec3f eye(0, 1.0, 4.0);
             Ray ray = { eye, unit(dir) };
 
-            std::vector<vec3f> samples;
-            for (int i=0; i < opts.num_samples; i++) {
-                samples.push_back(shade(ray, 0, opts.num_bounces));
-            }
+            std::vector<vec3f> samples =
+                sample(ray, opts.num_samples, opts.num_bounces);
 
             vec3f average_sample = vec_average(samples);
             write_pixel(pixels, average_sample, x, y, opts.image_width);
@@ -190,4 +189,14 @@ void Scene::render_block(RenderOpts &opts, uint8_t *pixels,
 
     /* std::cout << "}" << std::endl; */
 
+}
+
+std::vector<vec3f> Scene::sample(const Ray &ray, int num_samples,
+        int num_bounces)
+{
+    std::vector<vec3f> samples;
+    for (int i=0; i < num_samples; i++) {
+        samples.push_back(shade(ray, 0, num_bounces));
+    }
+    return samples;
 }

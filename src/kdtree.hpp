@@ -13,9 +13,9 @@ class KdTree {
         std::vector<Triangle> m_tris;
 
     public:
-        KdTree(std::vector<Triangle> tris, int dim_split = 0,
+        KdTree(std::vector<Triangle> &tris, int dim_split = 0,
                 int max_tris = 3);
-        TriangleHit hit(Ray &ray);
+        TriangleHit hit(const Ray &ray);
 };
 
 #endif

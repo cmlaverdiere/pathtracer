@@ -4,7 +4,7 @@
 // Modified slabs method from Real Time Rendering ch 16.7.1
 // PROFILE: Branch all at once.
 // OPT: Try without div by f.
-bool Box::intersect(Ray &ray)
+bool Box::intersect(const Ray &ray)
 {
     float t_min = -INF;
     float t_max = INF;

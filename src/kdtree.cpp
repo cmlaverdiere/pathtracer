@@ -6,7 +6,7 @@
 // A tree is constructed with at most max_tris on each leaf.
 // OPT: use SAH
 // OPT: precalc midpoints
-KdTree::KdTree(std::vector<Triangle> tris, int dim_split, int max_tris)
+KdTree::KdTree(std::vector<Triangle> &tris, int dim_split, int max_tris)
 {
     // Leaf creation.
     if (tris.size() <= max_tris) {
@@ -58,7 +58,7 @@ KdTree::KdTree(std::vector<Triangle> tris, int dim_split, int max_tris)
     m_right = new KdTree(right_tris, next_dim);
 }
 
-TriangleHit KdTree::hit(Ray &ray)
+TriangleHit KdTree::hit(const Ray &ray)
 {
     // At leaf
     if (m_left == NULL && m_right == NULL) {

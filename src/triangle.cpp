@@ -13,7 +13,7 @@ vec3f Triangle::midpoint()
 
 // https://en.wikipedia.org/wiki/Moller-Trumbore_intersection_algorithm
 // OPT: precalculate dominant triangle axis.
-float Triangle::intersect(Ray &ray)
+float Triangle::intersect(const Ray &ray)
 {
     float EPSILON = 0.0001;
 
