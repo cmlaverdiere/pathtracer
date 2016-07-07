@@ -118,6 +118,8 @@ void Scene::render(const RenderOpts &opts, std::string outfile_path)
     // For timing how long the rendering takes.
     auto start = std::chrono::steady_clock::now();
 
+    std::cout << "{";
+
     // OPT: Some grid cells will finish faster than others. Consider another
     // method.
     std::vector<std::thread> threads;
@@ -139,6 +141,8 @@ void Scene::render(const RenderOpts &opts, std::string outfile_path)
         threads[i].join();
     }
 
+    std::cout << "}" << std::endl;
+
     std::cout << "Saving image to " << outfile_path << std::endl;
     write_png(outfile_path.c_str(), pixels, opts.image_width, opts.image_height);
 
@@ -153,16 +157,14 @@ void Scene::render_block(const RenderOpts &opts, uint8_t *pixels,
                 int startx, int starty, int lenx, int leny)
 {
     // For drawing a rendering progress bar.
-    /* int bar_width = 10; */
-    /* int dot_inc = opts.image_height / bar_width; */
+    int bar_width = 10;
+    int dot_inc = (opts.image_height * opts.y_threads) / bar_width;
 
     // Top, bottom, left, right locations of frustum plane.
     float t = tan(opts.fov / 2),
            b = -t,
            l = -t,
            r = t;
-
-    /* std::cout << "{"; */
 
     for (int y=starty; y < starty + leny; y++) {
         for (int x=startx; x < startx + lenx; x++) {
@@ -182,13 +184,10 @@ void Scene::render_block(const RenderOpts &opts, uint8_t *pixels,
         }
 
         // Update progress bar.
-        /* if (y % dot_inc == 0) { */
-        /*     std::cout << "." << std::flush; */
-        /* } */
+        if (y % dot_inc == 0) {
+            std::cout << "." << std::flush;
+        }
     }
-
-    /* std::cout << "}" << std::endl; */
-
 }
 
 std::vector<vec3f> Scene::sample(const Ray &ray, int num_samples,
