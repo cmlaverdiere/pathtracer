@@ -19,7 +19,7 @@ typedef struct {
 } Triangle;
 
 typedef struct {
-    Triangle* tri = NULL;
+    Triangle* tri = nullptr;
     float dist = INF;
 } TriangleHit;
 

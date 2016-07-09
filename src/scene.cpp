@@ -66,7 +66,7 @@ vec3f Scene::shade(Ray ray, int bounce, int max_bounces)
     Triangle* tri = hit_data.tri;
     float dist = hit_data.dist;
 
-    if (tri == NULL) {
+    if (tri == nullptr) {
         return vec3f(0.0, 0.0, 0.0);
     }
 

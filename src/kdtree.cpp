@@ -11,8 +11,8 @@ KdTree::KdTree(std::vector<Triangle> &tris, int dim_split, int max_tris)
     // Leaf creation.
     if (tris.size() <= max_tris) {
         m_tris = tris; // PROFILE copy
-        m_left = NULL;
-        m_right = NULL;
+        m_left = nullptr;
+        m_right = nullptr;
         return;
     }
 
@@ -61,10 +61,10 @@ KdTree::KdTree(std::vector<Triangle> &tris, int dim_split, int max_tris)
 TriangleHit KdTree::hit(const Ray &ray)
 {
     // At leaf
-    if (m_left == NULL && m_right == NULL) {
+    if (m_left == nullptr && m_right == nullptr) {
         TriangleHit hit_data;
         float cl_dist = INF;
-        Triangle *cl_tri = NULL;
+        Triangle *cl_tri = nullptr;
 
         // Find which triangle (if any) our ray hits.
         bool hit = false;
@@ -88,7 +88,7 @@ TriangleHit KdTree::hit(const Ray &ray)
     else if (m_box.intersect(ray)) {
         TriangleHit left_hit = m_left->hit(ray);
         TriangleHit right_hit = m_right->hit(ray);
-        if (left_hit.tri == NULL) {
+        if (left_hit.tri == nullptr) {
             return right_hit;
         } else {
             // We may hit triangles in both trees. In this case, take the
