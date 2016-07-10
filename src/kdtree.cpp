@@ -88,16 +88,13 @@ TriangleHit KdTree::hit(const Ray &ray)
     else if (m_box.intersect(ray)) {
         TriangleHit left_hit = m_left->hit(ray);
         TriangleHit right_hit = m_right->hit(ray);
-        if (left_hit.tri == nullptr) {
-            return right_hit;
+
+        // We may hit triangles in both trees. In this case, take the
+        // closer hit.
+        if (left_hit.dist < right_hit.dist) {
+            return left_hit;
         } else {
-            // We may hit triangles in both trees. In this case, take the
-            // closer hit.
-            if (left_hit.dist < right_hit.dist) {
-                return left_hit;
-            } else {
-                return right_hit;
-            }
+            return right_hit;
         }
     }
 
