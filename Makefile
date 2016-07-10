@@ -6,7 +6,7 @@ WARNINGS = -Wall -Weffc++ -Wuninitialized
 FLAGS = -g -std=c++11 $(OPT) $(WARNINGS)
 LIBPATH = ./lib
 INCPATH = ./lib
-LIBS = -ltiny_obj_loader -lpng -lpthread
+LIBS = -ltiny_obj_loader -lpng -lpthread -lprofiler
 
 SRC_DIR = ./src
 SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
