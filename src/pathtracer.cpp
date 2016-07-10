@@ -19,6 +19,7 @@
  */
 
 // OPT: GPU or SIMD
+// OPT: Cache design
 
 #include <iostream>
 #include <string>
