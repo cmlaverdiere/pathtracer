@@ -59,8 +59,7 @@ int main(int argc, char* argv[])
             case 'h':
                 show_help();
                 std::exit(EXIT_SUCCESS);
-            default:
-                argparse_errors << "Unrecognized flag -" << cli_opt << std::endl;
+                break;
         }
     }
 
