@@ -1,9 +1,9 @@
 #include "aabb.hpp"
 #include "utils.hpp"
 
+#include <algorithm>
+
 // Modified slabs method from Real Time Rendering ch 16.7.1
-// PROFILE: Branch all at once.
-// OPT: Try without div by f.
 bool Box::intersect(const Ray &ray)
 {
     float t_min = -INF;
@@ -24,8 +24,8 @@ bool Box::intersect(const Ray &ray)
             t2 = temp;
         }
 
-        if (t1 > t_min) t_min = t1;
-        if (t2 < t_max) t_max = t2;
+        t_min = std::max(t1, t_min);
+        t_max = std::min(t2, t_max);
         if (t_min > t_max) return false;
         if (t_max < 0) return false;
     }
