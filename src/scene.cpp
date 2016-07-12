@@ -97,12 +97,10 @@ vec3f Scene::shade(Ray ray, int bounce, int max_bounces)
     // For specular, reflect perfectly.
     Ray spec_reflect_ray;
     vec3f spec_reflected_amt;
-    if (specular.norm() != 0.0) {
-        spec_reflect_ray.pos = reflect_ray.pos;
-        spec_reflect_ray.dir = ray.dir + (2 * cos_theta * norm);
-        spec_reflected_amt = shade(spec_reflect_ray, bounce + 1,
-                max_bounces);
-    }
+    spec_reflect_ray.pos = reflect_ray.pos;
+    spec_reflect_ray.dir = ray.dir + (2 * cos_theta * norm);
+    spec_reflected_amt = shade(spec_reflect_ray, bounce + 1,
+            max_bounces);
 
     // Final color
     return emittance + brdf.cwiseProduct(reflected_amt + spec_reflected_amt);
