@@ -16,25 +16,73 @@
  * https://en.wikipedia.org/wiki/Rendering_equation
  * http://www.flipcode.com/archives/Raytracing_Topics_Techniques-Part_7_Kd-Trees_and_More_Speed.shtml
  * https://blog.frogslayer.com/kd-trees-for-faster-ray-tracing-with-triangles/
+ *
+ * Author: Chris Laverdiere, 2016
  */
 
 // OPT: GPU or SIMD
 // OPT: Cache design
 
+#include "getopt.h"
+#include <cstdlib>
 #include <iostream>
+#include <sstream>
 #include <string>
 
 #include "scene.hpp"
 
+void show_help()
+{
+    std::cout <<
+        "Usage: ./pathtracer [options]\n"
+        "Flags: -h: Print this help.\n"
+        "       -i: Input model file.\n"
+        "       -o: Output image file.\n"
+    << std::endl;
+}
+
 int main(int argc, char* argv[])
 {
-    std::cout << "Pathtracer - Chris Laverdiere 2016" << std::endl;
+    std::string model_name;
+    std::string output_name;
+    std::stringstream argparse_errors;
+
+    char cli_opt = 0;
+    while ((cli_opt = getopt(argc, argv, "hi:o:")) != -1) {
+        switch (cli_opt) {
+            case 'i':
+                model_name.assign(optarg);
+                break;
+            case 'o':
+                output_name.assign(optarg);
+                break;
+            case 'h':
+                show_help();
+                std::exit(EXIT_SUCCESS);
+            default:
+                argparse_errors << "Unrecognized flag -" << cli_opt << std::endl;
+        }
+    }
+
+    if (model_name.empty()) {
+        argparse_errors << "You must specify an input model with -i <model>" << std::endl;
+    }
+
+    if (output_name.empty()) {
+        argparse_errors << "You must specify an output image with -o <image>" << std::endl;
+    }
+
+    if (!(argparse_errors.rdbuf()->in_avail() == 0)) {
+        std::cerr << argparse_errors.str() << std::endl;
+        std::cerr << "Invalid flags given. Use -h for usage info." << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
 
     // Pathtracer settings
     RenderOpts render_opts =
     {
-        .image_width = 128,
-        .image_height = 128,
+        .image_width = 196,
+        .image_height = 196,
         .num_samples = 30,
         .num_bounces = 3,
         .x_threads = 4,
@@ -42,18 +90,11 @@ int main(int argc, char* argv[])
         .fov = M_PI / 5.0,
     };
 
-    /* std::string model_path = "objs/"; */
-    /* std::string model_name = "CornellBox-Original.obj"; */
-    std::string model_path = "objs/";
-    std::string model_name = "CornellBox-Sphere.obj";
-
-    std::string outfile_path = "rt.png";
-
     std::cout << "Preprocessing scene" << std::endl;
-    Scene scene(model_path, model_name);
+    Scene scene(model_name);
 
     std::cout << "Rendering scene" << std::endl;
-    scene.render(render_opts, outfile_path);
+    scene.render(render_opts, output_name);
 
     return 0;
 }

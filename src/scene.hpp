@@ -41,7 +41,7 @@ class Scene {
                 int startx, int starty, int lenx, int leny);
 
     public:
-        Scene(std::string model_path, std::string model_name);
+        Scene(std::string model_name);
         void render(const RenderOpts &opts, std::string outfile_path);
 };
 

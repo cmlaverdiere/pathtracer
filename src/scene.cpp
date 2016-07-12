@@ -1,6 +1,7 @@
 #include <chrono>
 #include <functional>
 #include <iostream>
+#include <libgen.h>
 #include <thread>
 #include <time.h>
 #include <vector>
@@ -9,17 +10,21 @@
 #include "model.hpp"
 #include "scene.hpp"
 
-Scene::Scene(std::string model_path, std::string model_name)
+Scene::Scene(std::string model_name)
 {
     std::string err;
 
-    std::cout << "Loading model " << model_path << model_name << std::endl;
+    std::cout << "Loading model " << model_name << std::endl;
     unsigned int flags =
         tinyobj::triangulation | tinyobj::calculate_normals;
 
-    std::string obj_filename = model_path + model_name;
+    std::string model_name_copy(model_name);
+    char* model_name_char = const_cast<char*>(model_name_copy.c_str());
+    char* obj_dir = dirname(model_name_char);
+    strcat(obj_dir, "/");
+
     bool success = tinyobj::LoadObj(m_shapes, m_mats, err,
-            obj_filename.c_str(), model_path.c_str(), flags);
+            model_name.c_str(), obj_dir, flags);
 
     if (!success) {
         std::cout << err << std::endl;
@@ -83,7 +88,7 @@ vec3f Scene::shade(Ray ray, int bounce, int max_bounces)
     reflect_ray.pos = ray.pos + dist * ray.dir;
     vec3f emittance = to_vec3f(mat.emission);
     vec3f reflectance = to_vec3f(mat.diffuse);
-    vec3f specular = to_vec3f(mat.specular);
+    // vec3f specular = to_vec3f(mat.specular);
     vec3f &norm = tri->norm;
 
     // Reflect in a random direction on the normal's unit hemisphere.
