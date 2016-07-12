@@ -1,7 +1,7 @@
 # TODO Use Cmake (or alt)
 
 CC = clang++
-OPT = -O3
+OPT = -Ofast
 WARNINGS = -Wall -Weffc++ -Wuninitialized
 FLAGS = -g -std=c++11 $(OPT) $(WARNINGS)
 LIBPATH = ./lib
