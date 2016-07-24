@@ -20,7 +20,8 @@
  * Author: Chris Laverdiere, 2016
  */
 
-// OPT: GPU or SIMD
+// OPT: GPU (drawpix)
+// OPT: opencl
 // OPT: Cache design
 
 #include "getopt.h"
@@ -77,6 +78,13 @@ int main(int argc, char* argv[])
         std::exit(EXIT_FAILURE);
     }
 
+    // TODO Set through config
+    vec3f look_eye(0, 1.0, 4.0);
+    vec3f look_dir(0, 0, -1.0);
+    vec3f up_dir(0, 1.0, 0.0);
+    Ray look_at = { look_eye, look_dir };
+    Camera camera(look_at, up_dir);
+
     // Pathtracer settings
     RenderOpts render_opts =
     {
@@ -90,10 +98,10 @@ int main(int argc, char* argv[])
     };
 
     std::cout << "Preprocessing scene" << std::endl;
-    Scene scene(model_name);
+    Scene scene(model_name, render_opts, camera);
 
     std::cout << "Rendering scene" << std::endl;
-    scene.render(render_opts, output_name);
+    scene.render(output_name);
 
     return 0;
 }

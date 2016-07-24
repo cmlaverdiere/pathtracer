@@ -3,9 +3,11 @@
 
 #include <vector>
 
+#include "camera.hpp"
 #include "kdtree.hpp"
 #include "model.hpp"
 
+// DES: Separate into Renderer class, move out of Scene.
 typedef struct {
     int image_width, image_height; // Image dimensions in pixels
     int num_samples; // Number of samples for each pixel
@@ -25,6 +27,8 @@ class Scene {
         std::vector<Shape> m_shapes;
         std::vector<Material> m_mats;
         KdTree* m_tree;
+        RenderOpts m_render_opts;
+        Camera m_camera;
 
         /* Sample the pixel intersected by ray with num_samples samples. */
         std::vector<vec3f> sample(const Ray &ray, int num_samples,
@@ -37,12 +41,12 @@ class Scene {
          * Renders a block of the image with upper left at (startx, starty) and
          * lower right at (startx + lenx, starty + leny).
          */
-        void render_block(const RenderOpts &opts, uint8_t *pixels,
-                int startx, int starty, int lenx, int leny);
+        void render_block(uint8_t *pixels, int startx, int starty,
+                int lenx, int leny);
 
     public:
-        Scene(std::string model_name);
-        void render(const RenderOpts &opts, std::string outfile_path);
+        Scene(std::string model_name, RenderOpts render_opts, Camera camera);
+        void render(std::string outfile_path);
 };
 
 #endif

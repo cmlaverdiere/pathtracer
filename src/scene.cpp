@@ -10,7 +10,8 @@
 #include "model.hpp"
 #include "scene.hpp"
 
-Scene::Scene(std::string model_name)
+Scene::Scene(std::string model_name, RenderOpts render_opts, Camera camera)
+    : m_render_opts(render_opts), m_camera(camera)
 {
     std::string err;
 
@@ -111,12 +112,12 @@ vec3f Scene::shade(Ray ray, int bounce, int max_bounces)
     return emittance + brdf.cwiseProduct(reflected_amt + spec_reflected_amt);
 }
 
-void Scene::render(const RenderOpts &opts, std::string outfile_path)
+void Scene::render(std::string outfile_path)
 {
     // Seed for places we need random vector directions.
     srand(time(NULL));
 
-    uint8_t pixels[opts.image_height * opts.image_width * 3];
+    uint8_t pixels[m_render_opts.image_height * m_render_opts.image_width * 3];
 
     // For timing how long the rendering takes.
     auto start = std::chrono::steady_clock::now();
@@ -127,14 +128,14 @@ void Scene::render(const RenderOpts &opts, std::string outfile_path)
     // method.
     std::vector<std::thread> threads;
 
-    int lenx = opts.image_width / opts.x_threads;
-    int leny = opts.image_height / opts.y_threads;
-    for (int x=0; x < opts.x_threads; x++) {
-        for (int y=0; y < opts.y_threads; y++) {
+    int lenx = m_render_opts.image_width / m_render_opts.x_threads;
+    int leny = m_render_opts.image_height / m_render_opts.y_threads;
+    for (int x=0; x < m_render_opts.x_threads; x++) {
+        for (int y=0; y < m_render_opts.y_threads; y++) {
             threads.push_back(
                     std::thread(
                         &Scene::render_block, this,
-                        std::ref(opts), &pixels[0], x * lenx, y * leny, lenx, leny
+                        &pixels[0], x * lenx, y * leny, lenx, leny
                         )
                     );
         }
@@ -147,7 +148,7 @@ void Scene::render(const RenderOpts &opts, std::string outfile_path)
     std::cout << "}" << std::endl;
 
     std::cout << "Saving image to " << outfile_path << std::endl;
-    write_png(outfile_path.c_str(), pixels, opts.image_width, opts.image_height);
+    write_png(outfile_path.c_str(), pixels, m_render_opts.image_width, m_render_opts.image_height);
 
     auto end = std::chrono::steady_clock::now();
     std::cout << "Traced image in " <<
@@ -155,35 +156,39 @@ void Scene::render(const RenderOpts &opts, std::string outfile_path)
         << " seconds." << std::endl;
 }
 
-// TODO refactor RenderOpts to be a class member.
-void Scene::render_block(const RenderOpts &opts, uint8_t *pixels,
-                int startx, int starty, int lenx, int leny)
+void Scene::render_block(uint8_t *pixels, int startx, int starty,
+        int lenx, int leny)
 {
     // For drawing a rendering progress bar.
     int bar_width = 10;
-    int dot_inc = (opts.image_height * opts.y_threads) / bar_width;
+    int dot_inc =
+        (m_render_opts.image_height * m_render_opts.y_threads) / bar_width;
 
     // Top, bottom, left, right locations of frustum plane.
-    float t = tan(opts.fov / 2),
+    float t = tan(m_render_opts.fov / 2),
            b = -t,
            l = -t,
            r = t;
 
     for (int y=starty; y < starty + leny; y++) {
         for (int x=startx; x < startx + lenx; x++) {
-            float u = l + ((r - l) * (x + 0.5) / opts.image_height);
-            float v = b + ((t - b) * (y + 0.5) / opts.image_width);
+            float u = l + ((r - l) * (x + 0.5) / m_render_opts.image_height);
+            float v = b + ((t - b) * (y + 0.5) / m_render_opts.image_width);
             v = -v;
 
-            vec3f dir(u, v, -1.0);
-            vec3f eye(0, 1.0, 4.0);
-            Ray ray = { eye, unit(dir) };
+            vec3f dir = (u * m_camera.m_right)
+                + (v * m_camera.m_up)
+                + vec3f(0.0, 0.0, -1.0);
+
+            Ray ray = { m_camera.m_pos, unit(dir) };
 
             std::vector<vec3f> samples =
-                sample(ray, opts.num_samples, opts.num_bounces);
+                sample(ray, m_render_opts.num_samples,
+                        m_render_opts.num_bounces);
 
             vec3f average_sample = vec_average(samples);
-            write_pixel(pixels, average_sample, x, y, opts.image_width);
+            write_pixel(pixels, average_sample, x, y,
+                    m_render_opts.image_width);
         }
 
         // Update progress bar.
