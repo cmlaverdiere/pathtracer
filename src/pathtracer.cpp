@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
 
     // TODO Set through config
     vec3f look_eye(0, 1.0, 4.0);
-    vec3f look_dir(0, 0, -1.0);
+    vec3f look_dir(0.0, 0, -1.0);
     vec3f up_dir(0, 1.0, 0.0);
     Ray look_at = { look_eye, look_dir };
     Camera camera(look_at, up_dir);

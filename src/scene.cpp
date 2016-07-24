@@ -178,7 +178,7 @@ void Scene::render_block(uint8_t *pixels, int startx, int starty,
 
             vec3f dir = (u * m_camera.m_right)
                 + (v * m_camera.m_up)
-                + vec3f(0.0, 0.0, -1.0);
+                + m_camera.m_view;
 
             Ray ray = { m_camera.m_pos, unit(dir) };
 
