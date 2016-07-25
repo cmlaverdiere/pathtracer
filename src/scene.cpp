@@ -1,8 +1,9 @@
+#include <algorithm>
 #include <chrono>
+#include <deque>
 #include <functional>
 #include <iostream>
 #include <libgen.h>
-#include <thread>
 #include <time.h>
 #include <vector>
 
@@ -114,41 +115,46 @@ vec3f Scene::shade(Ray ray, int bounce, int max_bounces)
 
 void Scene::render(std::string outfile_path)
 {
-    // Seed for places we need random vector directions.
-    srand(time(NULL));
-
-    uint8_t pixels[m_render_opts.image_height * m_render_opts.image_width * 3];
+    int num_pixels = m_render_opts.image_height * m_render_opts.image_width;
 
     // For timing how long the rendering takes.
     auto start = std::chrono::steady_clock::now();
 
-    std::cout << "{";
+    /* Container for pixel color data. */
+    std::vector<vec3f> pixels(num_pixels);
 
-    // OPT: Some grid cells will finish faster than others. Consider another
-    // method.
-    std::vector<std::thread> threads;
+    /* How many times each pixel has been sampled. */
+    int sample_counts[num_pixels];
+    std::fill_n(sample_counts, num_pixels, 0);
 
-    int lenx = m_render_opts.image_width / m_render_opts.x_threads;
-    int leny = m_render_opts.image_height / m_render_opts.y_threads;
-    for (int x=0; x < m_render_opts.x_threads; x++) {
-        for (int y=0; y < m_render_opts.y_threads; y++) {
-            threads.push_back(
-                    std::thread(
-                        &Scene::render_block, this,
-                        &pixels[0], x * lenx, y * leny, lenx, leny
-                        )
-                    );
-        }
+    WorkQueue pixel_queue;
+
+    // TODO randomize queue
+    for (int i=0; i < num_pixels; i++) {
+        pixel_queue.push_back(i);
     }
 
-    for (int i=0; i < threads.size(); i++){
-        threads[i].join();
+    // Seed for places we need random vector directions.
+    srand(time(NULL));
+
+    std::cout << "{" << std::flush;
+
+    std::vector<std::thread> threads;
+    for (int i=0; i < m_render_opts.num_threads; i++) {
+        threads.push_back(
+                std::thread(&Scene::render_pixel, this, std::ref(pixel_queue),
+                    std::ref(pixels), &sample_counts[0]));
+    }
+
+    for (std::thread &t : threads){
+        t.join();
     }
 
     std::cout << "}" << std::endl;
 
     std::cout << "Saving image to " << outfile_path << std::endl;
-    write_png(outfile_path.c_str(), pixels, m_render_opts.image_width, m_render_opts.image_height);
+    write_png(outfile_path.c_str(), pixels, m_render_opts.image_width,
+            m_render_opts.image_height);
 
     auto end = std::chrono::steady_clock::now();
     std::cout << "Traced image in " <<
@@ -156,54 +162,53 @@ void Scene::render(std::string outfile_path)
         << " seconds." << std::endl;
 }
 
-void Scene::render_block(uint8_t *pixels, int startx, int starty,
-        int lenx, int leny)
+// TODO rename to render_pixels
+void Scene::render_pixel(WorkQueue &pixel_queue, std::vector<vec3f> &pixels,
+        int *sample_counts)
 {
-    // For drawing a rendering progress bar.
-    int bar_width = 10;
-    int dot_inc =
-        (m_render_opts.image_height * m_render_opts.y_threads) / bar_width;
-
     // Top, bottom, left, right locations of frustum plane.
-    float t = tan(m_render_opts.fov / 2),
-           b = -t,
-           l = -t,
-           r = t;
+    const float t = tan(m_render_opts.fov / 2),
+          b = -t,
+          l = -t,
+          r = t;
 
-    for (int y=starty; y < starty + leny; y++) {
-        for (int x=startx; x < startx + lenx; x++) {
-            float u = l + ((r - l) * (x + 0.5) / m_render_opts.image_height);
-            float v = b + ((t - b) * (y + 0.5) / m_render_opts.image_width);
-            v = -v;
+    const int total_needed = m_render_opts.image_width
+        * m_render_opts.image_height
+        * m_render_opts.num_samples;
 
-            vec3f dir = (u * m_camera.m_right)
-                + (v * m_camera.m_up)
-                + m_camera.m_view;
+    int pixels_done = 0;
+    while (pixel_queue.size() != 0) { // TODO Or hit num_samples
+        int pixel = pixel_queue.pop_front();
 
-            Ray ray = { m_camera.m_pos, unit(dir) };
+        int x = pixel % m_render_opts.image_width;
+        int y = pixel / m_render_opts.image_height;
 
-            std::vector<vec3f> samples =
-                sample(ray, m_render_opts.num_samples,
-                        m_render_opts.num_bounces);
+        float u = l + ((r - l) * (x + 0.5) / m_render_opts.image_height);
+        float v = b + ((t - b) * (y + 0.5) / m_render_opts.image_width);
+        v = -v;
 
-            vec3f average_sample = vec_average(samples);
-            write_pixel(pixels, average_sample, x, y,
-                    m_render_opts.image_width);
+        vec3f dir = (u * m_camera.m_right)
+            + (v * m_camera.m_up)
+            + m_camera.m_view;
+
+        Ray ray = { m_camera.m_pos, unit(dir) };
+
+        vec3f sample = shade(ray, 0, m_render_opts.num_bounces);
+        vec3f prev_sample = pixels[pixel];
+
+        int sample_count = sample_counts[pixel];
+        pixels[pixel] = (sample + (prev_sample * sample_count)) / (sample_count + 1);
+        sample_counts[pixel] += 1;
+
+        if (sample_counts[pixel] >= m_render_opts.num_samples) {
+            return;
         }
 
-        // Update progress bar.
-        if (y % dot_inc == 0) {
+        pixels_done++;
+        if (pixels_done % (total_needed / m_render_opts.bar_length) == 0) {
             std::cout << "." << std::flush;
         }
-    }
-}
 
-std::vector<vec3f> Scene::sample(const Ray &ray, int num_samples,
-        int num_bounces)
-{
-    std::vector<vec3f> samples;
-    for (int i=0; i < num_samples; i++) {
-        samples.push_back(shade(ray, 0, num_bounces));
+        pixel_queue.push_back(pixel);
     }
-    return samples;
 }

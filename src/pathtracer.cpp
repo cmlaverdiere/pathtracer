@@ -23,6 +23,7 @@
 // OPT: GPU (drawpix)
 // OPT: opencl
 // OPT: Cache design
+// NEXT: Optional live-rendering mode (worker threads per pixel).
 
 #include "getopt.h"
 #include <cstdlib>
@@ -47,15 +48,19 @@ int main(int argc, char* argv[])
     std::string model_name;
     std::string output_name;
     std::stringstream argparse_errors;
+    bool real_time = false;
 
     char cli_opt = 0;
-    while ((cli_opt = getopt(argc, argv, "hi:o:")) != -1) {
+    while ((cli_opt = getopt(argc, argv, "hi:o:r")) != -1) {
         switch (cli_opt) {
             case 'i':
                 model_name.assign(optarg);
                 break;
             case 'o':
                 output_name.assign(optarg);
+                break;
+            case 'r':
+                real_time = true;
                 break;
             case 'h':
                 show_help();
@@ -92,8 +97,8 @@ int main(int argc, char* argv[])
         .image_height = 196,
         .num_samples = 30,
         .num_bounces = 3,
-        .x_threads = 4,
-        .y_threads = 4,
+        .num_threads = 9,
+        .bar_length = 72,
         .fov = M_PI / 5.0,
     };
 
