@@ -4,7 +4,10 @@
  * around I'm using libraries for wavefront .obj loading, .png writing, and
  * vector math, whereas before they were hand rolled. Much nicer this way.
  *
- * Requires: tinyobjloader (included), Eigen, png++
+ * Requires: tinyobjloader (included), Eigen, png++, soil,
+ *           OpenGL 3.3 (for live-render), glfw, glew
+ *
+ * Building: Only tested on Linux. See Makefile.
  *
  * Related:
  * - Metropolis light transport
@@ -16,6 +19,7 @@
  * https://en.wikipedia.org/wiki/Rendering_equation
  * http://www.flipcode.com/archives/Raytracing_Topics_Techniques-Part_7_Kd-Trees_and_More_Speed.shtml
  * https://blog.frogslayer.com/kd-trees-for-faster-ray-tracing-with-triangles/
+ * http://www.iquilezles.org/www/articles/simplepathtracing/simplepathtracing.htm
  *
  * Other cool projects:
  * http://raytracey.blogspot.com/2016/01/gpu-path-tracing-tutorial-3-take-your.html
@@ -100,17 +104,12 @@ int main(int argc, char* argv[])
     vec3f look_dir(0.0, 0, -1.0);
     vec3f up_dir(0, 1.0, 0.0);
 
-    int num_samples = 30;
-    if (real_time) {
-        num_samples = 0;
-    }
-
     // Pathtracer settings
     RenderOpts render_opts =
     {
-        .image_width = 128,
-        .image_height = 128,
-        .num_samples = num_samples,
+        .image_width = 256,
+        .image_height = 256,
+        .num_samples = 30,
         .num_bounces = 3,
         .num_threads = 9,
         .bar_length = 72,
