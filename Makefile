@@ -4,13 +4,14 @@ CC = clang++
 OPT = -Ofast
 WARNINGS = -Wall -Weffc++ -Wuninitialized
 FLAGS = -g -std=c++11 $(OPT) $(WARNINGS)
-LIBPATH = ./lib
-INCPATH = ./lib
 LIBS = -ltiny_obj_loader -lpng -lpthread -lprofiler
 
 SRC_DIR = ./src
 SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
 OBJECTS = $(SOURCES:.cpp=.o)
+
+LIBPATH = $(SRC_DIR)/lib
+INCPATH = $(SRC_DIR)/lib
 
 pathtracer: $(OBJECTS)
 	$(CC) $^ $(FLAGS) -I$(INCPATH) -L$(LIBPATH) $(LIBS) -o $@

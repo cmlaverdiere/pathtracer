@@ -11,7 +11,7 @@ typedef struct {
     vec3f verts[3];
     vec3f norm;
     Shape *shape_data;
-    int index;
+    size_t index;
 
     vec3f& operator[] (const int index);
     vec3f midpoint();

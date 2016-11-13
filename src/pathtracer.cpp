@@ -17,13 +17,20 @@
  * http://www.flipcode.com/archives/Raytracing_Topics_Techniques-Part_7_Kd-Trees_and_More_Speed.shtml
  * https://blog.frogslayer.com/kd-trees-for-faster-ray-tracing-with-triangles/
  *
+ * Other cool projects:
+ * http://raytracey.blogspot.com/2016/01/gpu-path-tracing-tutorial-3-take-your.html
+ *
  * Author: Chris Laverdiere, 2016
  */
 
-// OPT: GPU (drawpix)
+// TODO look at logging libraries
+// https://github.com/easylogging/easyloggingpp
+// https://github.com/easylogging/easyloggingpp
 // OPT: opencl
-// OPT: Cache design
-// NEXT: Optional live-rendering mode (worker threads per pixel).
+// NEXT: Opengl live render (tex quad)
+// TODO: Moving camera in live render
+// TODO: RTR math
+// TODO: Cache opts
 
 #include "getopt.h"
 #include <cstdlib>
@@ -32,6 +39,8 @@
 #include <string>
 
 #include "scene.hpp"
+#include "renderer.hpp"
+#include "frontends.hpp"
 
 void show_help()
 {
@@ -70,16 +79,19 @@ int main(int argc, char* argv[])
     }
 
     if (model_name.empty()) {
-        argparse_errors << "You must specify an input model with -i <model>" << std::endl;
+        argparse_errors << "You must specify an input model with -i <model>"
+            << std::endl;
     }
 
     if (output_name.empty()) {
-        argparse_errors << "You must specify an output image with -o <image>" << std::endl;
+        argparse_errors << "You must specify an output image with -o <image>"
+            << std::endl;
     }
 
     if (!(argparse_errors.rdbuf()->in_avail() == 0)) {
         std::cerr << argparse_errors.str() << std::endl;
-        std::cerr << "Invalid flags given. Use -h for usage info." << std::endl;
+        std::cerr << "Invalid flags given. Use -h for usage info."
+            << std::endl;
         std::exit(EXIT_FAILURE);
     }
 
@@ -87,26 +99,41 @@ int main(int argc, char* argv[])
     vec3f look_eye(0, 1.0, 4.0);
     vec3f look_dir(0.0, 0, -1.0);
     vec3f up_dir(0, 1.0, 0.0);
-    Ray look_at = { look_eye, look_dir };
-    Camera camera(look_at, up_dir);
+
+    int num_samples = 30;
+    if (real_time) {
+        num_samples = 0;
+    }
 
     // Pathtracer settings
     RenderOpts render_opts =
     {
-        .image_width = 196,
-        .image_height = 196,
-        .num_samples = 30,
+        .image_width = 128,
+        .image_height = 128,
+        .num_samples = num_samples,
         .num_bounces = 3,
         .num_threads = 9,
         .bar_length = 72,
         .fov = M_PI / 5.0,
+        .cam_up = up_dir,
+        .cam_eye = look_eye,
+        .cam_at = look_dir,
     };
 
-    std::cout << "Preprocessing scene" << std::endl;
-    Scene scene(model_name, render_opts, camera);
+    Renderer renderer(render_opts);
 
-    std::cout << "Rendering scene" << std::endl;
-    scene.render(output_name);
+    std::cout << "Preprocessing scene" << std::endl;
+    Scene scene(model_name);
+
+    if (real_time) {
+        std::cout << "Using OpenGL context for rendering." << std::endl;
+        OpenGLFrontend rendering_frontend;
+        rendering_frontend.render_scene(render_opts, scene);
+    } else {
+        std::cout << "Rendering to PNG image." << std::endl;
+        ImageFrontend rendering_frontend;
+        rendering_frontend.render_image(render_opts, scene, output_name);
+    }
 
     return 0;
 }
