@@ -120,10 +120,11 @@ void OpenGLFrontend::render_scene(RenderOpts render_opts, Scene &scene) {
     glBindBuffer(GL_ARRAY_BUFFER, tex_vbo);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (GLvoid*) 0);
 
+    int redraw = 2048;
+    int num_pixels_rendered = 0;
     while (!glfwWindowShouldClose(win)) {
-        int last_pixel_id = -1;
-        while (last_pixel_id != 0) {
-            last_pixel_id = renderer.shade_next_pixel(scene);
+        while (++num_pixels_rendered % redraw != 0) {
+            renderer.shade_next_pixel(scene);
         }
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
