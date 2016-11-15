@@ -25,6 +25,7 @@ private:
     float m_frust_top, m_frust_bottom, m_frust_right, m_frust_left;
 
     WorkQueue m_pixel_queue; // Consumer queue to read next pixel from.
+    std::vector<std::thread> m_workers; // Thread pool for parallel pixel rendering.
     Camera* m_camera;
 
     /* Cast a ray into the scene and return a color. */
@@ -34,7 +35,8 @@ public:
     RenderOpts m_render_opts;
 
     std::vector<vec3f>* get_pixels() { return &m_pixel_buf; }
-    int shade_next_pixel(Scene &scene); // Return the pixel id that was shaded.
+    void start_render(Scene& scene);
+    void work_render(Scene& scene);
     int get_num_pixels();
     void update_frustum_view();
 

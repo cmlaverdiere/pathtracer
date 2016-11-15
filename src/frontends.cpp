@@ -11,17 +11,6 @@
 #include "image.hpp"
 #include "scene.hpp"
 
-// TODO re-architect threading.
-// std::vector<std::thread> threads;
-// for (int i=0; i < m_render_opts.num_threads; i++) {
-//     threads.push_back(
-//             std::thread(&Renderer::render_pixels, this, std::ref(pixel_queue),
-//                 std::ref(pixels), &sample_counts[0]));
-// }
-// for (std::thread &t : threads){
-//     t.join();
-// }
-
 void ImageFrontend::render_image(RenderOpts render_opts, Scene &scene,
                                  std::string outfile_path) {
     Renderer renderer(render_opts);
@@ -38,7 +27,8 @@ void ImageFrontend::render_image(RenderOpts render_opts, Scene &scene,
         * renderer.m_render_opts.num_samples;
 
     while (pixels_done < total_needed) {
-        renderer.shade_next_pixel(scene);
+        std::cout << "Currently borked." << std::endl;
+        // renderer.shade_next_pixel(scene);
         pixels_done++;
 
         if ((pixels_done % (total_needed / render_opts.bar_length)) == 0) {
@@ -62,6 +52,8 @@ void ImageFrontend::render_image(RenderOpts render_opts, Scene &scene,
 // TODO
 void OpenGLFrontend::render_scene(RenderOpts render_opts, Scene &scene) {
     Renderer renderer(render_opts);
+    renderer.start_render(scene);
+
     std::vector<vec3f> *pixels = renderer.get_pixels();
     GLvoid* pixel_data = &((*pixels)[0]);
 
@@ -120,12 +112,8 @@ void OpenGLFrontend::render_scene(RenderOpts render_opts, Scene &scene) {
     glBindBuffer(GL_ARRAY_BUFFER, tex_vbo);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (GLvoid*) 0);
 
-    int redraw = 2048;
-    int num_pixels_rendered = 0;
     while (!glfwWindowShouldClose(win)) {
-        while (++num_pixels_rendered % redraw != 0) {
-            renderer.shade_next_pixel(scene);
-        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(70));
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
