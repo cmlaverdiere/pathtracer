@@ -30,11 +30,12 @@
 // TODO look at logging libraries
 // https://github.com/easylogging/easyloggingpp
 // https://github.com/easylogging/easyloggingpp
-// OPT: opencl
-// NEXT: Opengl live render (tex quad)
-// TODO: Moving camera in live render
+// NEXT: Reintroduce threading with pool
 // TODO: RTR math
-// TODO: Cache opts
+// TODO: Proper CLI flags
+// TODO: Moving camera in live render
+// OPT: Cache opts
+// OPT: opencl?
 
 #include "getopt.h"
 #include <cstdlib>
