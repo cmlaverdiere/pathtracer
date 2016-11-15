@@ -15,11 +15,19 @@ OBJECTS = $(SOURCES:.cpp=.o)
 LIBPATH = $(SRC_DIR)/lib
 INCPATH = $(SRC_DIR)/lib
 
-pathtracer: $(OBJECTS)
+LIB_ARCHIVES = $(LIBPATH)/libtiny_obj_loader.a
+
+pathtracer: $(OBJECTS) $(LIB_ARCHIVES)
 	$(CC) $^ $(FLAGS) -I$(INCPATH) -L$(LIBPATH) $(GLLIBS) $(XLIBS) $(LIBS) -o $@
 
 .cpp.o:
 	$(CC) -c $^ $(FLAGS) -I$(INCPATH) -o $@
+
+$(LIBPATH)/libtiny_obj_loader.a: $(LIBPATH)/tiny_obj_loader.o
+	ar rcs $@ $<
+
+$(LIBPATH)/tiny_obj_loader.o: $(LIBPATH)/tiny_obj_loader.cc
+	$(CC) -c -o $@ $<
 
 clean:
 	rm -f pathtracer $(SRC_DIR)/*.o
