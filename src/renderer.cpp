@@ -31,9 +31,12 @@ Renderer::Renderer(RenderOpts render_opts) : m_render_opts(render_opts) {
 
     update_frustum_view();
 
-    // TODO randomize queue
+    // Populate pixel queue with a random ordering of pixels.
+    std::vector<int> range(num_pixels);
+    std::iota(range.begin(), range.end(), 0);
+    std::random_shuffle(range.begin(), range.end());
     for (int i=0; i < num_pixels; i++) {
-        m_pixel_queue.push_back(i);
+        m_pixel_queue.push_back(range[i]);
     }
 
     // Seed for places we need random vector directions.
