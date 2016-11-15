@@ -30,10 +30,10 @@
 // TODO look at logging libraries
 // https://github.com/easylogging/easyloggingpp
 // https://github.com/easylogging/easyloggingpp
-// NEXT: Reintroduce threading with pool
 // TODO: RTR math
 // TODO: Proper CLI flags
 // TODO: Moving camera in live render
+// TODO: Snapshot picture save from OpenGL frontend.
 // OPT: Cache opts
 // OPT: opencl?
 
@@ -108,10 +108,10 @@ int main(int argc, char* argv[])
     // Pathtracer settings
     RenderOpts render_opts =
     {
-        .image_width = 256,
-        .image_height = 256,
+        .image_width = 512,
+        .image_height = 512,
         .num_samples = 30,
-        .num_bounces = 3,
+        .num_bounces = 1,
         .num_threads = 9,
         .bar_length = 72,
         .fov = M_PI / 5.0,

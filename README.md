@@ -1,3 +1,3 @@
 Work in progress, adding sweet pics as I go.
 
-This has only been tested on Linux.
+![Cornell Box](pics/pathtrace8.png)
