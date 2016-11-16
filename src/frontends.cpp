@@ -14,27 +14,40 @@
 void ImageFrontend::render_image(RenderOpts render_opts, Scene &scene,
                                  std::string outfile_path) {
     Renderer renderer(render_opts);
+    renderer.start_render(scene);
 
-    std::cout << "{0% " << std::string(render_opts.bar_length - 8, ' ') << " 100%}" << std::endl;
+    std::cout << "{0% " << std::string(render_opts.bar_length - 8, ' ')
+              << " 100%}" << std::endl;
     std::cout << "{" << std::flush;
     auto start = std::chrono::steady_clock::now();
 
     std::vector<vec3f> *pixels = renderer.get_pixels();
 
-    int pixels_done = 0;
     const int total_needed = renderer.m_render_opts.image_width
         * renderer.m_render_opts.image_height
         * renderer.m_render_opts.num_samples;
 
-    while (pixels_done < total_needed) {
-        std::cout << "Currently borked." << std::endl;
-        // renderer.shade_next_pixel(scene);
-        pixels_done++;
+    // Draw a progress bar while rendering.
+    int dot_delta = total_needed / render_opts.bar_length;
+    int pixels_done = 0;
+    int total_dots = 0;
+    while (renderer.m_pixels_done < total_needed) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
-        if ((pixels_done % (total_needed / render_opts.bar_length)) == 0) {
-            std::cout << "." << std::flush;
+        pixels_done = renderer.m_pixels_done;
+        int last_dot = total_dots * dot_delta;
+
+        if (pixels_done - last_dot >= dot_delta) {
+            int new_dots = (pixels_done - last_dot) / dot_delta;
+            total_dots += new_dots;
+            if (total_dots > render_opts.bar_length) {
+                new_dots -= total_dots - render_opts.bar_length;
+            }
+            std::cout << std::string(new_dots, '.') << std::flush;
         }
     }
+
+    renderer.stop_render(true);
 
     auto end = std::chrono::steady_clock::now();
 

@@ -26,6 +26,8 @@ Renderer::Renderer(RenderOpts render_opts) : m_render_opts(render_opts) {
     Ray look_at = { render_opts.cam_eye, render_opts.cam_at };
     m_camera = new Camera(look_at, render_opts.cam_up);
 
+    m_pixels_done = 0;
+
     // TODO possible bug.
     int num_pixels = get_num_pixels();
     for (int i=0; i < num_pixels; i++) {
@@ -49,9 +51,19 @@ Renderer::Renderer(RenderOpts render_opts) : m_render_opts(render_opts) {
 };
 
 void Renderer::start_render(Scene& scene) {
+    m_render_running = true;
     for (int t=0; t < m_render_opts.num_threads; t++) {
         m_workers.push_back(std::thread(&Renderer::work_render, this,
                                         std::ref(scene)));
+    }
+}
+
+void Renderer::stop_render(bool wait=false) {
+    m_render_running = false;
+    if (wait) {
+        for (std::thread &t : m_workers) {
+            t.join();
+        }
     }
 }
 
@@ -107,7 +119,7 @@ vec3f Renderer::sample(Scene& scene, Ray ray, int bounce, int max_bounces)
 
 // OPT: precompute / store ray directions for x, y.
 void Renderer::work_render(Scene &scene) {
-    while (true) {
+    while (m_render_running) {
         int pixel_id = m_pixel_queue.pop_front();
 
         int x = pixel_id % m_render_opts.image_width;
@@ -130,6 +142,7 @@ void Renderer::work_render(Scene &scene) {
         m_sample_counts[pixel_id] += 1;
 
         m_pixel_queue.push_back(pixel_id);
+        m_pixels_done++; // TODO not thread-safe.
     }
 }
 

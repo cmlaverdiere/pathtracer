@@ -1,6 +1,8 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
+#include <atomic>
+
 #include "camera.hpp"
 #include "ray.hpp"
 #include "scene.hpp"
@@ -23,6 +25,7 @@ private:
     std::vector<vec3f> m_pixel_buf; // Internal buffer for RGB pixel data.
     std::vector<int> m_sample_counts; // How many times each pixel has been sampled.
     float m_frust_top, m_frust_bottom, m_frust_right, m_frust_left;
+    bool m_render_running = false;
 
     WorkQueue m_pixel_queue; // Consumer queue to read next pixel from.
     std::vector<std::thread> m_workers; // Thread pool for parallel pixel rendering.
@@ -32,10 +35,12 @@ private:
     vec3f sample(Scene& scene, Ray ray, int bounce=0, int max_bounces=3);
 
 public:
+    std::atomic_int m_pixels_done;
     RenderOpts m_render_opts;
 
     std::vector<vec3f>* get_pixels() { return &m_pixel_buf; }
     void start_render(Scene& scene);
+    void stop_render(bool wait);
     void work_render(Scene& scene);
     int get_num_pixels();
     void update_frustum_view();
