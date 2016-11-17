@@ -18,17 +18,12 @@
 
 // DES: Separate renderer class from rendering instance.
 
-// Semaphore on consumer. Or just no locking. Introduce 60hz timer on screen
-// refresh thread. Still need feedback as to how many pixels have been rendered
-// so that the image frontend can stop rendering. Requires a lock on a counter.
-
 Renderer::Renderer(RenderOpts render_opts) : m_render_opts(render_opts) {
     Ray look_at = { render_opts.cam_eye, render_opts.cam_at };
     m_camera = new Camera(look_at, render_opts.cam_up);
 
     m_pixels_done = 0;
 
-    // TODO possible bug.
     int num_pixels = get_num_pixels();
     for (int i=0; i < num_pixels; i++) {
         vec3f empty_vec(0.0, 0.0, 0.0);

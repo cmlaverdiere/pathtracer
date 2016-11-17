@@ -31,7 +31,6 @@
 // https://github.com/easylogging/easyloggingpp
 // https://github.com/easylogging/easyloggingpp
 // TODO: RTR math
-// TODO: Proper CLI flags
 // TODO: Moving camera in live render
 // TODO: Snapshot picture save from OpenGL frontend.
 // OPT: Cache opts
@@ -59,28 +58,47 @@ void show_help()
 
 int main(int argc, char* argv[])
 {
+    // Default args
+    bool real_time = false;
+    int image_width = 256, image_height = 256;
+    int num_samples = 100;
+    int num_bounces = 5;
+    int num_threads = 9;
+
+    // Required args
     std::string model_name;
     std::string output_name;
     std::stringstream argparse_errors;
-    bool real_time = false;
 
     char cli_opt = 0;
-    while ((cli_opt = getopt(argc, argv, "hi:o:r")) != -1) {
-        switch (cli_opt) {
-            case 'i':
-                model_name.assign(optarg);
-                break;
-            case 'o':
-                output_name.assign(optarg);
-                break;
-            case 'r':
-                real_time = true;
-                break;
-            case 'h':
-                show_help();
-                std::exit(EXIT_SUCCESS);
-                break;
-        }
+    while ((cli_opt = getopt(argc, argv, "b:d:hi:o:rs:t:")) != -1) {
+         switch (cli_opt) {
+         case 'b':
+             sscanf(optarg, "%d", &num_bounces);
+             break;
+         case 'd':
+             sscanf(optarg, "%dx%d", &image_width, &image_height);
+             break;
+         case 'i':
+             model_name.assign(optarg);
+             break;
+         case 'o':
+             output_name.assign(optarg);
+             break;
+         case 'r':
+             real_time = true;
+             break;
+         case 's':
+             sscanf(optarg, "%d", &num_samples);
+             break;
+         case 't':
+             sscanf(optarg, "%d", &num_threads);
+             break;
+         case 'h':
+             show_help();
+             std::exit(EXIT_SUCCESS);
+             break;
+         }
     }
 
     if (model_name.empty()) {
@@ -108,11 +126,11 @@ int main(int argc, char* argv[])
     // Pathtracer settings
     RenderOpts render_opts =
     {
-        .image_width = 256,
-        .image_height = 256,
-        .num_samples = 15,
-        .num_bounces = 3,
-        .num_threads = 9,
+        .image_width = image_width,
+        .image_height = image_height,
+        .num_samples = num_samples,
+        .num_bounces = num_bounces,
+        .num_threads = num_threads,
         .bar_length = 72,
         .fov = M_PI / 5.0,
         .cam_up = up_dir,
