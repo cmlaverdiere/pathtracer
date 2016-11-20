@@ -125,8 +125,13 @@ void OpenGLFrontend::render_scene(RenderOpts render_opts, Scene &scene) {
     glBindBuffer(GL_ARRAY_BUFFER, tex_vbo);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (GLvoid*) 0);
 
+    float pixels_one_frame = render_opts.image_height * render_opts.image_width;
     while (!glfwWindowShouldClose(win)) {
         std::this_thread::sleep_for(std::chrono::milliseconds(70));
+
+        std::cout << "Pixels rendered: " << renderer.m_pixels_done << ", or ~"
+                  << renderer.m_pixels_done / pixels_one_frame << " samples per pixel"
+                  << std::endl;
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
