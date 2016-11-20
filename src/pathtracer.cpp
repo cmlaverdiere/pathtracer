@@ -20,13 +20,17 @@
  * http://www.flipcode.com/archives/Raytracing_Topics_Techniques-Part_7_Kd-Trees_and_More_Speed.shtml
  * https://blog.frogslayer.com/kd-trees-for-faster-ray-tracing-with-triangles/
  * http://www.iquilezles.org/www/articles/simplepathtracing/simplepathtracing.htm
+ * https://www.cs.cornell.edu/courses/CS6630/
  *
- * Other cool projects:
+ * Other projects:
  * http://raytracey.blogspot.com/2016/01/gpu-path-tracing-tutorial-3-take-your.html
+ * https://github.com/embree/embree
+ *
  *
  * Author: Chris Laverdiere, 2016
  */
 
+// TODO cosine weighted hemi ray / clamping values
 // TODO look at logging libraries
 // https://github.com/easylogging/easyloggingpp
 // https://github.com/easylogging/easyloggingpp
@@ -60,7 +64,7 @@ int main(int argc, char* argv[])
 {
     // Default args
     bool real_time = false;
-    int image_width = 256, image_height = 256;
+    int image_width = 512, image_height = 512;
     int num_samples = 100;
     int num_bounces = 5;
     int num_threads = 9;
