@@ -30,12 +30,11 @@
  * Author: Chris Laverdiere, 2016
  */
 
+// TODO: Moving camera in live render
 // TODO cosine weighted hemi ray / clamping values
 // TODO look at logging libraries
 // https://github.com/easylogging/easyloggingpp
 // https://github.com/easylogging/easyloggingpp
-// TODO: RTR math
-// TODO: Moving camera in live render
 // TODO: Snapshot picture save from OpenGL frontend.
 // OPT: Cache opts
 // OPT: opencl?
@@ -64,7 +63,7 @@ int main(int argc, char* argv[])
 {
     // Default args
     bool real_time = false;
-    int image_width = 512, image_height = 512;
+    int image_width = 256, image_height = 256;
     int num_samples = 100;
     int num_bounces = 5;
     int num_threads = 9;

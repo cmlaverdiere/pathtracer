@@ -35,7 +35,7 @@ inline vec3f vec_average(const std::vector<vec3f> &vecs)
 
 inline vec3f rand_hemisphere_vec(const vec3f &norm)
 {
-    vec3f randy = Eigen::Vector3f::Random();
+    vec3f randy = unit(Eigen::Vector3f::Random());
     if (randy.dot(norm) < 0) {
         return -randy;
     } else {

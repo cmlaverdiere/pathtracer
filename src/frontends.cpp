@@ -11,6 +11,7 @@
 #include "image.hpp"
 #include "scene.hpp"
 
+// TODO gamma correction / scaling.
 void ImageFrontend::render_image(RenderOpts render_opts, Scene &scene,
                                  std::string outfile_path) {
     Renderer renderer(render_opts);
@@ -62,7 +63,6 @@ void ImageFrontend::render_image(RenderOpts render_opts, Scene &scene,
               renderer.m_render_opts.image_height);
 }
 
-// TODO
 void OpenGLFrontend::render_scene(RenderOpts render_opts, Scene &scene) {
     Renderer renderer(render_opts);
     renderer.start_render(scene);
