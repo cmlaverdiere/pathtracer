@@ -14,7 +14,7 @@ newmtl leftWall
   Ni 1.5000
   illum 2
   Ka 0.63 0.065 0.05 # Red
-  Kd 0.63 0.065 0.05
+  Kd 0.75 0.25 0.25
   Ks 0.69 0.69 0.69
   Ke 0 0 0
 
@@ -23,8 +23,8 @@ newmtl rightWall
   Ns 10.0000
   Ni 1.5000
   illum 2
-  Ka 0.14 0.45 0.091 # Green
-  Kd 0.14 0.45 0.091
+  Ka 0.161 0.133 0.427 # Blue
+  Kd 0.25 0.25 0.75
   Ks 0.69 0.69 0.69
   Ke 0 0 0
 
@@ -34,7 +34,7 @@ newmtl floor
   Ni 1.0000
   illum 2
   Ka 0.725 0.71 0.68 # White
-  Kd 0.725 0.71 0.68
+  Kd 0.75 0.75 0.75
   Ks 0.69 0.69 0.69
   Ke 0 0 0
 
@@ -44,17 +44,27 @@ newmtl ceiling
   Ni 1.0000
   illum 2
   Ka 0.725 0.71 0.68 # White
-  Kd 0.725 0.71 0.68
+  Kd 0.75 0.75 0.75
   Ks 0     0    0
   Ke 0     0    0
+
+
+newmtl frontWall
+  Ns 10.0000
+  Ni 1.0000
+  illum 2
+  Ka 0.7250 0.7100 0.6800
+  Kd 1.00 1.00 1.00
+  Ks 0.69 0.69 0.69
+  Ke 0 0 0
 
 
 newmtl backWall
   Ns 10.0000
   Ni 1.0000
   illum 2
-  Ka 0.725 0.71 0.68 # Blue
-  Kd 0.125 0.71 0.68
+  Ka 0.7250 0.7100 0.6800
+  Kd 0.75 0.75 0.75
   Ks 0.69 0.69 0.69
   Ke 0 0 0
 
@@ -63,8 +73,8 @@ newmtl shortBox
   Ns 10.0000
   Ni 1.0000
   illum 2
-  Ka 0.725 0.71 0.68 # Purple
-  Kd 0.725 0.11 0.68
+  Ka 0.161 0.133 0.427 # Blue
+  Kd 1.00 1.00 1.00
   Ks 0.69 0.69 0.69
   Ke 0 0 0
 
@@ -73,8 +83,8 @@ newmtl tallBox
   Ns 10.0000
   Ni 1.0000
   illum 2
-  Ka 0.725 0.71 0.68 # Yellow
-  Kd 0.725 0.71 0.18
+  Ka 0.63 0.065 0.05 # Red
+  Kd 1.00 1.00 1.00
   Ks 0.69 0.69 0.69
   Ke 0 0 0
 
@@ -84,7 +94,7 @@ newmtl light
   Ni 1.0000
   illum 2
   Ka 0.78 0.78 0.78 # White
-  Kd 0.78 0.78 0.78
+  Kd 0.00, 0.00, 0.00
   Ks 0.69 0.69 0.69
-  # Ke 17 12 4
-  Ke 50 40 10
+  Ke 17 12 4
+  # Ke 2.0 1.8 1.6
