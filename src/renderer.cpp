@@ -66,50 +66,51 @@ int Renderer::get_num_pixels() {
     return m_render_opts.image_height * m_render_opts.image_width;
 }
 
-vec3f Renderer::sample(Scene& scene, Ray ray, int bounce, int max_bounces)
+vec3f Renderer::sample(Scene& scene, Ray ray, int num_bounces)
 {
-    TriangleHit hit_data = scene.m_tree->hit(ray);
-    Triangle* tri = hit_data.tri;
-    float dist = hit_data.dist;
+    vec3f accum_radiance(0.0, 0.0, 0.0);
+    vec3f rem_radiance(1.0, 1.0, 1.0);
 
-    if (tri == nullptr) {
-        return vec3f(0.0, 0.0, 0.0);
+    for (int b=0; b < num_bounces; b++) {
+        TriangleHit hit_data = scene.m_tree->hit(ray);
+        Triangle* tri = hit_data.tri;
+        float dist = hit_data.dist;
+
+        if (tri == nullptr) {
+            return vec3f(0.0, 0.0, 0.0);
+        }
+
+        tinyobj::mesh_t mesh = tri->shape_data->mesh;
+        Material mat = scene.m_mats[mesh.material_ids[tri->index / 3]];
+
+        // Material properties
+        vec3f emittance = to_vec3f(mat.emission);
+        vec3f diffuse = to_vec3f(mat.diffuse);
+        // vec3f specular = to_vec3f(mat.specular);
+        vec3f &norm = tri->norm;
+
+        // Calculate BRDF
+        float cos_theta = norm.dot(-ray.dir);
+        vec3f brdf = 2 * diffuse * cos_theta;
+
+        // Reflect in a random direction on the normal's unit hemisphere.
+        ray.pos = ray.pos + dist * ray.dir;
+        ray.dir = rand_hemisphere_vec(norm);
+
+        // Add accumulation of outgoing radiance.
+        accum_radiance += rem_radiance.cwiseProduct(emittance);
+        rem_radiance = rem_radiance.cwiseProduct(brdf);
+
+        // For specular, reflect perfectly.
+        // Ray spec_reflect_ray;
+        // vec3f spec_reflected_amt;
+        // spec_reflect_ray.pos = reflect_ray.pos;
+        // spec_reflect_ray.dir = ray.dir + (2 * cos_theta * norm);
+        // spec_reflected_amt = sample(scene, spec_reflect_ray, bounce + 1,
+        //         max_bounces);
     }
 
-    tinyobj::mesh_t mesh = tri->shape_data->mesh;
-    Material mat = scene.m_mats[mesh.material_ids[tri->index / 3]];
-
-    // Return black if we've bounced around enough.
-    if (bounce > max_bounces) {
-        return vec3f(0.0, 0.0, 0.0);
-    }
-
-    // Material properties
-    Ray reflect_ray;
-    reflect_ray.pos = ray.pos + dist * ray.dir;
-    vec3f emittance = to_vec3f(mat.emission);
-    vec3f reflectance = to_vec3f(mat.diffuse);
-    // vec3f specular = to_vec3f(mat.specular);
-    vec3f &norm = tri->norm;
-
-    // Reflect in a random direction on the normal's unit hemisphere.
-    reflect_ray.dir = rand_hemisphere_vec(norm);
-
-    // Calculate BRDF
-    float cos_theta = norm.dot(-ray.dir);
-    vec3f brdf = 2 * reflectance * cos_theta;
-    vec3f reflected_amt = sample(scene, reflect_ray, bounce + 1, max_bounces);
-
-    // For specular, reflect perfectly.
-    Ray spec_reflect_ray;
-    vec3f spec_reflected_amt;
-    spec_reflect_ray.pos = reflect_ray.pos;
-    spec_reflect_ray.dir = ray.dir + (2 * cos_theta * norm);
-    spec_reflected_amt = sample(scene, spec_reflect_ray, bounce + 1,
-            max_bounces);
-
-    // Final color
-    return emittance + brdf.cwiseProduct(reflected_amt + spec_reflected_amt);
+    return accum_radiance;
 }
 
 // OPT: precompute / store ray directions for x, y.
@@ -129,7 +130,7 @@ void Renderer::work_render(Scene &scene) {
         vec3f dir = (u * m_camera->m_right) + (v * m_camera->m_up) + m_camera->m_view;
         Ray ray = { m_camera->m_pos, unit(dir) };
 
-        vec3f new_sample = sample(scene, ray, 0, m_render_opts.num_bounces);
+        vec3f new_sample = sample(scene, ray, m_render_opts.num_bounces);
         vec3f prev_sample = m_pixel_buf[pixel_id];
 
         int sample_count = m_sample_counts[pixel_id];
@@ -137,7 +138,7 @@ void Renderer::work_render(Scene &scene) {
         m_sample_counts[pixel_id] += 1;
 
         m_pixel_queue.push_back(pixel_id);
-        m_pixels_done++; // TODO not thread-safe.
+        m_pixels_done++;
     }
 }
 

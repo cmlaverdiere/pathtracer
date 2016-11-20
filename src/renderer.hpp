@@ -32,7 +32,7 @@ private:
     Camera* m_camera;
 
     /* Cast a ray into the scene and return a color. */
-    vec3f sample(Scene& scene, Ray ray, int bounce=0, int max_bounces=3);
+    vec3f sample(Scene& scene, Ray ray, int num_bounces);
 
 public:
     std::atomic_int m_pixels_done;
