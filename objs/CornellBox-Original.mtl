@@ -66,7 +66,8 @@ newmtl backWall
   Ka 0.7250 0.7100 0.6800
   Kd 0.75 0.75 0.75
   Ks 0.69 0.69 0.69
-  Ke 0 0 0
+  # Ke 0 0 0
+  Ke 1 1 1
 
 
 newmtl shortBox
@@ -96,5 +97,5 @@ newmtl light
   Ka 0.78 0.78 0.78 # White
   Kd 0.00, 0.00, 0.00
   Ks 0.69 0.69 0.69
-  Ke 17 12 10
-  # Ke 2.0 1.8 1.6
+  # Ke 17 12 10
+  Ke 1 1 1

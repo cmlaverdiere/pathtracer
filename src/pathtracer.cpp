@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
 {
     // Default args
     bool real_time = false;
-    int image_width = 256, image_height = 256;
+    int image_width = 512, image_height = 512;
     int num_samples = 100;
     int num_bounces = 5;
     int num_threads = 9;
