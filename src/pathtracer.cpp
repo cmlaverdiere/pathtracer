@@ -21,6 +21,7 @@
  * https://blog.frogslayer.com/kd-trees-for-faster-ray-tracing-with-triangles/
  * http://www.iquilezles.org/www/articles/simplepathtracing/simplepathtracing.htm
  * https://www.cs.cornell.edu/courses/CS6630/
+ * http://www.kevinbeason.com/smallpt/
  *
  * Other projects:
  * http://raytracey.blogspot.com/2016/01/gpu-path-tracing-tutorial-3-take-your.html
@@ -31,6 +32,9 @@
  */
 
 // TODO: Moving camera in live render
+//       Movement speed depends on scene size
+// TODO AA
+// TODO Russian-roulette path termination
 // TODO cosine weighted hemi ray / clamping values
 // TODO look at logging libraries
 // https://github.com/easylogging/easyloggingpp
