@@ -13,6 +13,7 @@ vec3f to_vec3f(float* a);
 vec3f unit(const vec3f &v);
 vec3f vec_average(const std::vector<vec3f>& vecs);
 vec3f rand_hemisphere_vec(const vec3f &norm);
+vec3f cos_dist_hemisphere_vec(const vec3f &norm);
 
 inline vec3f to_vec3f(float* a)
 {
@@ -41,6 +42,24 @@ inline vec3f rand_hemisphere_vec(const vec3f &norm)
     } else {
         return randy;
     }
+}
+
+inline vec3f cos_dist_hemisphere_vec(const vec3f &norm)
+{
+    float theta = 2 * M_PI * ((float) rand() / (float) RAND_MAX);
+    float radius = sqrtf((float) rand() / (float) RAND_MAX);
+    float radius_sqrt = sqrtf(radius);
+
+    // Generate vector non-parallel to norm.
+    vec3f base;
+    do {
+        base = unit(Eigen::Vector3f::Random());
+    } while (fabs(base.dot(norm)) < 0.01);
+
+    vec3f u = norm.cross(base);
+    vec3f v = norm.cross(u);
+
+    return unit((norm * sqrtf(1 - radius)) + radius_sqrt * (u * cos(theta)) + (v * sin(theta)));
 }
 
 #endif

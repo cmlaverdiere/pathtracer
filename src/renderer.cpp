@@ -90,12 +90,12 @@ vec3f Renderer::sample(Scene& scene, Ray ray, int num_bounces)
         vec3f &norm = tri->norm;
 
         // Calculate BRDF
-        float cos_theta = norm.dot(-ray.dir);
-        vec3f brdf = 2 * diffuse * cos_theta;
+        vec3f brdf = 2 * diffuse;
 
         // Reflect in a random direction on the normal's unit hemisphere.
         ray.pos = ray.pos + dist * ray.dir;
-        ray.dir = rand_hemisphere_vec(norm);
+        // ray.dir = rand_hemisphere_vec(norm);
+        ray.dir = cos_dist_hemisphere_vec(norm);
 
         // Add accumulation of outgoing radiance.
         accum_radiance += rem_radiance.cwiseProduct(emittance);

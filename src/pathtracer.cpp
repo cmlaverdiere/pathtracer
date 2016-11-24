@@ -35,7 +35,6 @@
 //       Movement speed depends on scene size
 // TODO AA
 // TODO Russian-roulette path termination
-// TODO cosine weighted hemi ray / clamping values
 // TODO look at logging libraries
 // https://github.com/easylogging/easyloggingpp
 // https://github.com/easylogging/easyloggingpp
