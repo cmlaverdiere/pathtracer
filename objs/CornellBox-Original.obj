@@ -12,8 +12,8 @@
 mtllib CornellBox-Original.mtl
 
 ## Object floor
-v  -1.00  0.00   5.00
-v   1.00  0.00   5.00
+v  -1.00  0.00   1.00
+v   1.00  0.00   1.00
 v   1.00  0.00  -1.00
 v  -1.00  0.00  -1.00
 
@@ -22,10 +22,10 @@ usemtl floor
 f -4 -3 -2 -1
 
 ## Object ceiling
-v  -1.00  2.00   5.00
+v  -1.00  2.00   1.00
 v  -1.00  2.00  -1.00
 v   1.00  2.00  -1.00
-v   1.00  2.00   5.00
+v   1.00  2.00   1.00
 
 g ceiling
 usemtl ceiling
@@ -41,20 +41,20 @@ g backWall
 usemtl backWall
 f -4 -3 -2 -1
 
-## Object frontWall
-v  -1.00  0.00  5.00
-v   1.00  0.00  5.00
-v   1.00  2.00  5.00
-v  -1.00  2.00  5.00
+# ## Object frontWall
+# v  -1.00  0.00  1.00
+# v   1.00  0.00  1.00
+# v   1.00  2.00  1.00
+# v  -1.00  2.00  1.00
 
-g frontWall
-usemtl frontWall
-f -4 -3 -2 -1
+# g frontWall
+# usemtl frontWall
+# f -4 -3 -2 -1
 
 ## Object rightwall
 v	1.00  0.00  -1.00
-v	1.00  0.00   5.00
-v	1.00  2.00   5.00
+v	1.00  0.00   1.00
+v	1.00  2.00   1.00
 v	1.00  2.00  -1.00
 
 g rightWall
@@ -62,10 +62,10 @@ usemtl rightWall
 f -4 -3 -2 -1
 
 ## Object leftWall
-v  -1.00  0.00   5.00
+v  -1.00  0.00   1.00
 v  -1.00  0.00  -1.00
 v  -1.00  2.00  -1.00
-v  -1.00  2.00   5.00
+v  -1.00  2.00   1.00
 
 g leftWall
 usemtl leftWall
