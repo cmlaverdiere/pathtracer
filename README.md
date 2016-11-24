@@ -1,12 +1,15 @@
-Work in progress, adding sweet pics as I go.
+*Work in progress, adding sweet pics as I go.*
 
-Features:
+# Features
+
 - Live OpenGL rendering
 - Wavefront object loading
 
-Rendering:
+# Rendering
+
 - KD tree for bounding boxes
 - Cosine importance sampling
 
+# Gallery
+
 ![Cornell Box Boxes](pics/pathtrace12.png)
-1500 samples
