@@ -13,3 +13,4 @@
 # Gallery
 
 ![Cornell Box Boxes](pics/pathtrace12.png)
+![Cornell Box Boxes](pics/pathtrace13.png)
