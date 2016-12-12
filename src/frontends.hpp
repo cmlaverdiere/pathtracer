@@ -20,8 +20,13 @@ public:
 };
 
 class OpenGLFrontend {
-    std::string vertex_shader_file = "shader.vert";
-    std::string fragment_shader_file = "shader.frag";
+    // The shader files contain raw string literals.
+    std::string vertex_shader =
+        #include "shader.vert"
+        ;
+    std::string fragment_shader =
+        #include "shader.frag"
+        ;
 
     int load_shader(std::string filename, GLenum shader_type);
     int load_program();

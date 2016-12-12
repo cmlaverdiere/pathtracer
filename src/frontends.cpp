@@ -151,16 +151,9 @@ void OpenGLFrontend::render_scene(RenderOpts render_opts, Scene &scene) {
     exit(EXIT_SUCCESS);
 }
 
-int OpenGLFrontend::load_shader(std::string filename, GLenum shader_type)
+int OpenGLFrontend::load_shader(std::string shader_text, GLenum shader_type)
 {
-    std::ifstream shader_input(filename.c_str());
-    std::string shader_buf;
-
-    // Read the file into the buffer until we hit the null character.
-    shader_buf.assign((std::istreambuf_iterator<char>(shader_input)),
-            std::istreambuf_iterator<char>());
-
-    const GLchar* shader_source = shader_buf.c_str();
+    const GLchar* shader_source = shader_text.c_str();
     GLuint shader = glCreateShader(shader_type);
     glShaderSource(shader, 1, (const GLchar **) &shader_source, NULL);
     glCompileShader(shader);
@@ -176,7 +169,7 @@ int OpenGLFrontend::load_shader(std::string filename, GLenum shader_type)
         GLchar* infoLog = (GLchar*) malloc(max_len * sizeof(GLchar));
         glGetShaderInfoLog(shader, max_len, &max_len, infoLog);
 
-        printf("%s:%s\n", filename.c_str(), infoLog);
+        printf("%s:%s\n", shader_source, infoLog);
 
         glDeleteShader(shader);
         exit(EXIT_FAILURE);
@@ -187,8 +180,8 @@ int OpenGLFrontend::load_shader(std::string filename, GLenum shader_type)
 
 int OpenGLFrontend::load_program()
 {
-    GLuint vs = load_shader(vertex_shader_file, GL_VERTEX_SHADER);
-    GLuint fs = load_shader(fragment_shader_file, GL_FRAGMENT_SHADER);
+    GLuint vs = load_shader(vertex_shader, GL_VERTEX_SHADER);
+    GLuint fs = load_shader(fragment_shader, GL_FRAGMENT_SHADER);
 
     GLuint shader_program = glCreateProgram();
     glAttachShader(shader_program, vs);
