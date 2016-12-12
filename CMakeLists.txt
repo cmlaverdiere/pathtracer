@@ -11,8 +11,3 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lGL -lGLEW -lGLU -lSOIL -
 
 add_executable(pathtracer ${sources})
 target_link_libraries(pathtracer tiny_obj_loader)
-
-# TODO
-# threads –j9
-# speed analysis
-# gitignore cmake build
