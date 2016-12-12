@@ -9,12 +9,6 @@
 typedef Eigen::Vector3f vec3f;
 typedef Eigen::Vector3d vec3i;
 
-vec3f to_vec3f(float* a);
-vec3f unit(const vec3f &v);
-vec3f vec_average(const std::vector<vec3f>& vecs);
-vec3f rand_hemisphere_vec(const vec3f &norm);
-vec3f cos_dist_hemisphere_vec(const vec3f &norm);
-
 inline vec3f to_vec3f(float* a)
 {
     vec3f v(a[0], a[1], a[2]);

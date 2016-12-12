@@ -22,9 +22,9 @@
  * http://www.iquilezles.org/www/articles/simplepathtracing/simplepathtracing.htm
  * https://www.cs.cornell.edu/courses/CS6630/
  * http://www.kevinbeason.com/smallpt/
- *
- * Other projects:
  * http://raytracey.blogspot.com/2016/01/gpu-path-tracing-tutorial-3-take-your.html
+ *
+ * Other projects / libraries:
  * https://github.com/embree/embree
  *
  *
@@ -77,6 +77,7 @@ int main(int argc, char* argv[])
     std::stringstream argparse_errors;
 
     char cli_opt = 0;
+
     while ((cli_opt = getopt(argc, argv, "b:d:hi:o:rs:t:")) != -1) {
          switch (cli_opt) {
          case 'b':
@@ -112,7 +113,7 @@ int main(int argc, char* argv[])
             << std::endl;
     }
 
-    if (output_name.empty()) {
+    if (output_name.empty() && !real_time) {
         argparse_errors << "You must specify an output image with -o <image>"
             << std::endl;
     }
@@ -143,8 +144,6 @@ int main(int argc, char* argv[])
         .cam_eye = look_eye,
         .cam_at = look_dir,
     };
-
-    Renderer renderer(render_opts);
 
     std::cout << "Preprocessing scene" << std::endl;
     Scene scene(model_name);
