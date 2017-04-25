@@ -48,22 +48,20 @@
 #include <sstream>
 #include <string>
 
-#include "scene.hpp"
-#include "renderer.hpp"
 #include "frontends.hpp"
+#include "renderer.hpp"
+#include "scene.hpp"
 
-void show_help()
-{
-    std::cout <<
-        "Usage: ./pathtracer [options]\n"
-        "Flags: -h: Print this help.\n"
-        "       -i: Input model file.\n"
-        "       -o: Output image file.\n"
-    << std::endl;
+void show_help() {
+    std::cout << "Usage: ./pathtracer [options]\n"
+                 "Flags: -h: Print this help.\n"
+                 "       -i: Input model file.\n"
+                 "       -o: Output image file.\n"
+                 "       -r: Use real-time OpenGL output.\n"
+              << std::endl;
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char *argv[]) {
     // Default args
     bool real_time = false;
     int image_width = 512, image_height = 512;
@@ -79,49 +77,50 @@ int main(int argc, char* argv[])
     char cli_opt = 0;
 
     while ((cli_opt = getopt(argc, argv, "b:d:hi:o:rs:t:")) != -1) {
-         switch (cli_opt) {
-         case 'b':
-             sscanf(optarg, "%d", &num_bounces);
-             break;
-         case 'd':
-             sscanf(optarg, "%dx%d", &image_width, &image_height);
-             break;
-         case 'i':
-             model_name.assign(optarg);
-             break;
-         case 'o':
-             output_name.assign(optarg);
-             break;
-         case 'r':
-             real_time = true;
-             break;
-         case 's':
-             sscanf(optarg, "%d", &num_samples);
-             break;
-         case 't':
-             sscanf(optarg, "%d", &num_threads);
-             break;
-         case 'h':
-             show_help();
-             std::exit(EXIT_SUCCESS);
-             break;
-         }
+        switch (cli_opt) {
+        case 'b':
+            sscanf(optarg, "%d", &num_bounces);
+            break;
+        case 'd':
+            sscanf(optarg, "%dx%d", &image_width, &image_height);
+            break;
+        case 'i':
+            model_name.assign(optarg);
+            break;
+        case 'o':
+            output_name.assign(optarg);
+            break;
+        case 'r':
+            real_time = true;
+            break;
+        case 's':
+            sscanf(optarg, "%d", &num_samples);
+            break;
+        case 't':
+            sscanf(optarg, "%d", &num_threads);
+            break;
+        case 'h':
+            show_help();
+            std::exit(EXIT_SUCCESS);
+            break;
+        }
     }
 
     if (model_name.empty()) {
         argparse_errors << "You must specify an input model with -i <model>"
-            << std::endl;
+                        << std::endl;
     }
 
     if (output_name.empty() && !real_time) {
-        argparse_errors << "You must specify an output image with -o <image>"
+        argparse_errors
+            << "You must specify an output image with -o <image> or use -r."
             << std::endl;
     }
 
     if (!(argparse_errors.rdbuf()->in_avail() == 0)) {
         std::cerr << argparse_errors.str() << std::endl;
         std::cerr << "Invalid flags given. Use -h for usage info."
-            << std::endl;
+                  << std::endl;
         std::exit(EXIT_FAILURE);
     }
 
@@ -131,8 +130,7 @@ int main(int argc, char* argv[])
     vec3f up_dir(0, 1.0, 0.0);
 
     // Pathtracer settings
-    RenderOpts render_opts =
-    {
+    RenderOpts render_opts = {
         .image_width = image_width,
         .image_height = image_height,
         .num_samples = num_samples,

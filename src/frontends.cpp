@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <math.h>
@@ -199,6 +200,14 @@ void error_callback(int error, const char* description)
     std::cerr << "Error " << error << ": " << description << std::endl;
 }
 
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (key == GLFW_KEY_Q) {
+        std::cout << "Exiting renderer." << std::endl;
+        std::exit(EXIT_SUCCESS);
+    }
+}
+
 GLFWwindow* OpenGLFrontend::glfw_setup(int win_res_x, int win_res_y)
 {
     // Windowing setup
@@ -224,6 +233,7 @@ GLFWwindow* OpenGLFrontend::glfw_setup(int win_res_x, int win_res_y)
     }
 
     glfwMakeContextCurrent(win);
+    glfwSetKeyCallback(win, key_callback);
 
     glewExperimental = GL_TRUE;
     glewInit();

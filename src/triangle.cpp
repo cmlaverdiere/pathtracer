@@ -49,4 +49,3 @@ float Triangle::intersect(const Ray &ray)
         return 0;
     }
 }
-
