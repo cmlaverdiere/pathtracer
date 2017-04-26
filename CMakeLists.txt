@@ -1,6 +1,8 @@
 project(pathtracer)
 cmake_minimum_required(VERSION 0.1)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 file(GLOB_RECURSE sources "src/*.cpp" "src/*.hpp")
 include_directories("src/lib")
 add_library(tiny_obj_loader STATIC "src/lib/tiny_obj_loader.cc" "src/lib/tiny_obj_loader.h")
