@@ -4,9 +4,6 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-// Image loading
-#include <SOIL/SOIL.h>
-
 // OpenGL Matrix math
 #define GLM_FORCE_RADIANS
 #define GLM_SWIZZLE GLM_SWIZZLE_XYZW
